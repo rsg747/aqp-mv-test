@@ -2,16 +2,26 @@
 <meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>MV + SPOT · Run-and-Grade</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MV CQMV.1">
 <link rel="apple-touch-icon" href="icon.png">
-<meta http-equiv="Cache-Control" content="no-store">
-<style>html,body{margin:0;height:100%;background:#0b1428;color:#eaf0f8;font:16px -apple-system,Arial,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center}
-.b{color:#F2C14E;font-weight:800}</style></head>
-<body><div><div style="color:#F2C14E;font-weight:800;letter-spacing:3px;font-size:13px;margin-bottom:8px">TEST GROUP</div><div class="b" style="font-size:20px">MV + SPOT · Run-and-Grade</div><div style="color:#F2C14E;font-weight:800;font-size:22px;margin-top:4px">CQMV.1</div><div id=m style="margin-top:14px;color:#9fb2d0">Loading the current version…</div></div>
+<link rel="apple-touch-icon-precomposed" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<style>html,body{margin:0;padding:0;height:100%;background:#0b1428;overflow:hidden}
+#app{border:0;position:fixed;inset:0;width:100%;height:100%}
+#load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#9fb2d0;font:16px -apple-system,Arial,sans-serif;text-align:center}
+#load b{color:#F2C14E}</style></head>
+<body>
+<div id=load><div><div style="color:#F2C14E;font-weight:800;letter-spacing:3px;font-size:13px">TEST GROUP</div>
+<div style="color:#fff;font-weight:800;font-size:20px;margin-top:6px">MV + SPOT · Run-and-Grade</div>
+<div style="color:#F2C14E;font-weight:800;font-size:22px;margin-top:2px">CQMV.1</div>
+<div style="margin-top:12px">Loading the current version…</div></div></div>
+<iframe id=app title="MV + SPOT · Run-and-Grade" allow="clipboard-write; fullscreen"></iframe>
 <script>
-// Always fetch the freshest copy: unique URL each open defeats caching.
+// Load the freshest copy INSIDE this page (keeps the Home-Screen icon), unique URL defeats caching.
 var TOOL="MV_SPOT_Run_and_Grade.html";
-try{ location.replace(TOOL + (TOOL.indexOf("?")<0?"?":"&") + "v=" + Date.now()); }
-catch(e){ document.getElementById("m").textContent="Could not load — check your connection."; }
+var f=document.getElementById('app');
+f.onload=function(){ var l=document.getElementById('load'); if(l) l.style.display='none'; };
+f.src = TOOL + (TOOL.indexOf("?")<0?"?":"&") + "v=" + Date.now();
 </script></body></html>
