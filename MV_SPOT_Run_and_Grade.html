@@ -186,6 +186,24 @@
   .gp-std-none{font-size:12px;color:#7a8492;margin-bottom:8px}
   .gp-note{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;
     font-size:13px;font-family:inherit;resize:vertical;min-height:52px}
+
+  /* ---- task comments (any grade) ---- */
+  .box.tnote{position:relative}
+  .box.tnote::before{content:"";position:absolute;bottom:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#2f6fd6}
+  .gp-cmt{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+  .gp-cmt-btn{background:#eef4fd;color:#1e3a5f;border:1px solid #b9cbe6;border-radius:8px;padding:7px 10px;font-weight:700;font-size:13px;cursor:pointer}
+  .gp-cmt-h{font-size:12px;font-weight:800;color:#1e3a5f;margin:2px 0 6px}
+  .tnpanel{border:1px solid #c9d8ee;background:#f4f8fd;border-radius:10px;padding:10px 12px;margin-top:8px}
+  .tnpanel h4{margin:0 0 8px;font-size:13px;color:#1e3a5f;font-weight:800}
+  .tnitem{padding:6px 0;border-top:1px solid #dde7f4}
+  .tnitem:first-of-type{border-top:none}
+  .tnhead{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;font-size:12.5px}
+  .tnhead .tncode{font-weight:800;color:#1e3a5f}
+  .tnhead .tntag{font-size:11.5px;color:#4b5b70;background:#e3ecf8;border-radius:6px;padding:1px 6px}
+  .tntext{font-size:12.5px;color:#26313d;margin-top:3px;white-space:pre-wrap}
+  .lg-cmt{margin-top:10px}
+  .lg-cmt label{display:block;font-size:12px;font-weight:800;color:#1e3a5f;margin:6px 0 3px}
+  .lg-cmt textarea{width:100%;min-height:54px;border:1px solid #b9c6d6;border-radius:8px;padding:7px 9px;font:inherit;font-size:13px;box-sizing:border-box}
   .gp-foot{display:none;margin-top:12px;justify-content:flex-end}
   .gpick.wide .gp-foot{display:flex}
   .gp-done{background:var(--navy);color:#fff;border:none;border-radius:9px;padding:10px 22px;
@@ -932,7 +950,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.1";
+const VERSION = "2026.10.3";
 const VERSION_DATE = "2026-10-04";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
@@ -1196,6 +1214,74 @@ const state = {}; // key -> grade value
 const justText = {}; // legacy per-event text (kept for compatibility)
 // per-cell below-standard justification: jkey -> {stds:[indices/text], note:""}
 const justCell = {};
+
+/* ---- task comments: per task, per side (PF/PM), per run — any grade, incl. 4/5 ---- */
+const taskNotes = {};
+function tnKey(ex,run,code,side){ return ex+"|"+run+"|"+code+"|"+side; }
+function sideOf(role){ return /_PM$/.test(role) ? "PM" : "PF"; }
+function tnGet(ex,run,code,side){ return String(taskNotes[tnKey(ex,run,code,side)]||"").trim(); }
+function tnSet(ex,run,code,side,v){ const k=tnKey(ex,run,code,side); if(v && String(v).trim()) taskNotes[k]=String(v); else delete taskNotes[k]; }
+function _evsFor(ex){ return (ex==="MT" && typeof MT_EVENTS!=="undefined") ? MT_EVENTS : (ex==="MV" ? MV_EVENTS : SPOT_EVENTS); }
+function _pkFor(ex,run,side){ const lead=(typeof leadFor==="function")?leadFor(ex):"pf1st"; const oth=(lead==="pf1st")?"pf2nd":"pf1st"; const pf=(run===1)?lead:oth; return side==="PF" ? pf : (pf==="pf1st"?"pf2nd":"pf1st"); }
+function _tnWho(ex,run,side){ const pk=_pkFor(ex,run,side); const nm=(person[pk]&&person[pk].name)||(pk==="pf1st"?"PF 1st":"PF 2nd"); return nm; }
+function _tnEsc(t){ return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function tnSideGradeable(ex,run,ev,side){
+  const roles = side==="PF" ? ["H","SOP","A","CRM"] : ["SOP_PM","CRM_PM"];
+  return roles.some(r=> ev.rows[r.replace("_PM","")]===1 && dutyAvailable(run, ev.code, r));
+}
+function refreshNoteMarks(sheet){
+  if(!sheet || !sheet._ex) return;
+  sheet.querySelectorAll(".box[data-k][data-code][data-role]").forEach(b=>{
+    b.classList.toggle("tnote", !!tnGet(sheet._ex, RUN, b.dataset.code, sideOf(b.dataset.role)));
+  });
+}
+function renderTaskNotes(sheet, ex, events){
+  const host=sheet && sheet.querySelector("[data-tnhost]"); if(!host) return;
+  host.innerHTML="";
+  const items=[];
+  events.forEach(ev=>["PF","PM"].forEach(side=>{ const t=tnGet(ex,RUN,ev.code,side); if(t) items.push({ev,side,t}); }));
+  if(!items.length) return;
+  const p=document.createElement("div"); p.className="tnpanel";
+  p.innerHTML=`<h4>Comments — Run ${RUN} · ${items.length} item${items.length>1?"s":""}</h4>`;
+  items.forEach(({ev,side,t})=>{
+    const it=document.createElement("div"); it.className="tnitem";
+    it.innerHTML=`<div class="tnhead"><span class="tncode">${_tnEsc(ev.code)} — ${_tnEsc(ev.nm)}</span><span class="tntag">${side} · ${_tnEsc(_tnWho(ex,RUN,side))}</span></div><div class="tntext">${_tnEsc(t)}</div>`;
+    p.appendChild(it);
+  });
+  host.appendChild(p);
+}
+function tnRefreshAll(){
+  document.querySelectorAll(".sheet").forEach(sh=>{ if(sh._ex && sh._events){ renderTaskNotes(sh, sh._ex, sh._events); refreshNoteMarks(sh); } });
+  if(typeof autosave==="function"){ try{ autosave(); }catch(e){} }
+}
+function tnLGHTML(ex,run,ev){
+  let h="";
+  ["PF","PM"].forEach(side=>{
+    if(!tnSideGradeable(ex,run,ev,side)) return;
+    h += `<label>${side} comment · ${_tnEsc(_tnWho(ex,run,side))} <span style="font-weight:600;color:#6b7a8c">(optional · any grade)</span></label>`+
+         `<textarea data-tn="${_tnEsc(tnKey(ex,run,ev.code,side))}" placeholder="Comment for any grade — e.g. good technique, debrief point…">${_tnEsc(taskNotes[tnKey(ex,run,ev.code,side)]||"")}</textarea>`;
+  });
+  return h ? `<div class="lg-cmt">${h}</div>` : "";
+}
+document.addEventListener("input", function(e){
+  const t=e.target; if(!t || !t.dataset || !t.dataset.tn) return;
+  const p=t.dataset.tn.split("|"); tnSet(p[0], parseInt(p[1],10), p[2], p[3], t.value); tnRefreshAll();
+});
+function prCommentsRun(ex, run){
+  const out=[]; _evsFor(ex).forEach(ev=>["PF","PM"].forEach(side=>{ const t=tnGet(ex,run,ev.code,side); if(t) out.push("\u2022 "+ev.code+" "+ev.nm+" \u00b7 "+side+" ("+_tnWho(ex,run,side)+") \u2014 "+t); })); return out;
+}
+function prCommentsForStudent(ex, pfR, pmR, order){
+  const evs=_evsFor(ex); const list=order ? order.map(c=>evs.find(e=>e.code===c)).filter(Boolean) : evs; const out=[];
+  list.forEach(ev=>{ const a=tnGet(ex,pfR,ev.code,"PF"); if(a) out.push("\u2022 "+ev.code+" "+ev.nm+" \u00b7 PF (Run "+pfR+") \u2014 "+a); });
+  list.forEach(ev=>{ const b=tnGet(ex,pmR,ev.code,"PM"); if(b) out.push("\u2022 "+ev.code+" "+ev.nm+" \u00b7 PM (Run "+pmR+") \u2014 "+b); });
+  return out;
+}
+function buildStudentComments(events, pfRun, pmRun, ex){
+  const lines=prCommentsForStudent(ex, pfRun, pmRun, null); if(!lines.length) return null;
+  const box=document.createElement("div"); box.className="tnpanel";
+  box.innerHTML=`<h4>Comments — this student</h4>`+lines.map(l=>`<div class="tnitem"><div class="tntext">${_tnEsc(l)}</div></div>`).join("");
+  return box;
+}
 function jkeyOf(ex,run,evCode,roleFull){ return `${ex}|R${run}|${evCode}|${roleFull}`; }
 // role -> short behavior tag (matches PDF's [PF-H] style)
 const ROLE_TAG = {
@@ -1482,8 +1568,9 @@ function buildSheet(ex){
     <span class="qbtn" data-help="grading">?</span> <div class="hotnote" data-note>Tap an event header to lock its column as the active grade line.</div>
     <div class="finalbar" data-finalbar></div>
     <div class="justhost" data-justhost></div>
+    <div class="tnhost" data-tnhost></div>
     <div class="sshost" data-sshost></div>
-    <div class="foot">Boxes default to 4 · tap to change · shaded = N/A · grade 3 or below opens a comment box</div>
+    <div class="foot">Boxes default to 4 · tap to change · shaded = N/A · grade 3 or below requires a comment · 💬 comments can be added to any grade (blue dot)</div>
   `;
   wrap.querySelector(".profhost").appendChild(buildProfile(ex));
   wrap.querySelector(".gridwrap").appendChild(buildGrid(ex,events));
@@ -1517,6 +1604,7 @@ function buildSheet(ex){
   });
   wireTimer(wrap);
   buildJustifications(wrap, ex, events);   // initial pass
+  wrap._ex=ex; wrap._events=events; renderTaskNotes(wrap, ex, events); refreshNoteMarks(wrap);
   renderFinals(wrap, ex);
   wrap._ex=ex; wrap._events=events;        // for live refresh on grade change
   { const sl=wrap.querySelector("[data-seatline]"); if(sl) sl.innerHTML=seatSummaryHTML(RUN, ex); }
@@ -2092,7 +2180,7 @@ function openLessonGuide(ex, idx){
         });
         body += `<div class="lg-sec"><div class="lg-sh">Grade this task · Run ${RUN}</div>`+
                 `<div class="lg-grade">${rows}</div>`+
-                `<div class="lg-ghint">Tap a grade to change it — updates the sheet instantly.</div></div>`;
+                `<div class="lg-ghint">Tap a grade to change it — updates the sheet instantly.</div>`+tnLGHTML(ex,RUN,ev)+`</div>`;
       });
     }
     if(data.atc && data.atc.length){
@@ -2214,7 +2302,7 @@ function cell(ex,ev,role,ci,structural, dutyOK){
     }
   }else{
     if(!(k in state)) state[k]="4";
-    box.className="box"; box.dataset.k=k;
+    box.className="box"; box.dataset.k=k; box.dataset.code=ev.code; box.dataset.role=role;
     paint(box,state[k]);
     box.addEventListener("click",(e)=>{
       e.stopPropagation();
@@ -2266,7 +2354,7 @@ function openGradePicker(box, k, ex, ev, role, run, sheet){
   }
   function renderStandards(v){
     stdHost.innerHTML="";
-    if(!BELOW.has(v)){ modal.classList.remove("wide"); return; }  // only for 3-or-below
+    if(!BELOW.has(v)){ if(!modal._keep) modal.classList.remove("wide"); return; }  // only for 3-or-below
     modal.classList.add("wide");
     const stds = (TASK_STANDARDS[ev.code]||{})[baseRole(role)] || [];
     if(!justCell[jk]) justCell[jk]={stds:[], note:""};
@@ -2315,12 +2403,24 @@ function openGradePicker(box, k, ex, ev, role, run, sheet){
       e.stopPropagation();
       applyGrade(v);
       // For good grades / N/A, close immediately. For below-standard, keep open to pick standards.
-      if(!BELOW.has(v)) closeGradePicker();
+      if(!BELOW.has(v) && !modal._keep) closeGradePicker();
     });
     grid.appendChild(btn);
   });
   modal.appendChild(grid);
   modal.appendChild(stdHost);
+  { const side=sideOf(role); const tk=tnKey(ex,run,ev.code,side);
+    const cw=document.createElement("div"); cw.className="gp-cmt";
+    const ta=document.createElement("textarea"); ta.className="gp-note"; ta.dataset.tn=tk;
+    ta.placeholder=side+" comment for this task — optional, any grade (e.g. good technique, debrief point)…"; ta.value=taskNotes[tk]||"";
+    const hdr=document.createElement("div"); hdr.className="gp-cmt-h"; hdr.textContent="💬 "+side+" comment · "+ev.code+" (any grade)";
+    const btn=document.createElement("button"); btn.type="button"; btn.className="gp-cmt-btn"; btn.textContent="💬 Add "+side+" comment (any grade)";
+    const open=()=>{ modal._keep=true; modal.classList.add("wide"); btn.style.display="none"; hdr.style.display="block"; ta.style.display="block"; };
+    hdr.style.display="none"; ta.style.display="none";
+    btn.addEventListener("click",(e)=>{ e.stopPropagation(); open(); ta.focus(); });
+    cw.appendChild(btn); cw.appendChild(hdr); cw.appendChild(ta); modal.appendChild(cw);
+    if(tnGet(ex,run,ev.code,side)) open();
+  }
   // a Done button appears with the standards section
   const foot=document.createElement("div"); foot.className="gp-foot";
   const done=document.createElement("button"); done.type="button"; done.className="gp-done";
@@ -2503,6 +2603,7 @@ function aimsStudent(sn,ex,events){
   s.querySelector(".pf").appendChild(aimsTable(ex,events,"PF",pkey,pfRun));
   s.querySelector(".pm").appendChild(aimsTable(ex,events,"PM",pkey,pmRun));
   { const _sj=buildStudentJust(events, pfRun, pmRun, ex); if(_sj) s.appendChild(_sj); }
+  { const _sc=buildStudentComments(events, pfRun, pmRun, ex); if(_sc) s.appendChild(_sc); }
   s.querySelectorAll("input[data-field]").forEach(inp=>{
     inp.addEventListener("input",()=>{ person[inp.dataset.person][inp.dataset.field]=inp.value; });
   });
@@ -2557,13 +2658,14 @@ function clearObj(o){ for(const k in o) delete o[k]; }
 function snapshot(){
   const t={}; for(const k in timers){ const T=timers[k]; t[k]= T.running ? (T.elapsedMs+(Date.now()-T.startMs)) : T.elapsedMs; }
   return { ver:VERSION, savedAt:new Date().toISOString(),
-    state:{...state}, justCell:JSON.parse(JSON.stringify(justCell)),
+    state:{...state}, justCell:JSON.parse(JSON.stringify(justCell)), taskNotes:JSON.parse(JSON.stringify(taskNotes)),
     person:JSON.parse(JSON.stringify(person)), duty:{...duty}, flip:{...flip}, sessionDate, dateUserSet, crewSession:JSON.parse(JSON.stringify(crewSession)), timers:t, incReason:{...incReason}, ssNotes:JSON.parse(JSON.stringify(ssNotes)), instructor:{...instructor}, take:{...take} };
 }
 function applySnapshot(s){
   if(!s) return;
   clearObj(state); Object.assign(state, s.state||{});
   clearObj(justCell); Object.assign(justCell, s.justCell||{});
+  clearObj(taskNotes); Object.assign(taskNotes, s.taskNotes||{});
   if(s.person){ ["pf1st","pf2nd"].forEach(p=>{ person[p].name=(s.person[p]&&s.person[p].name)||""; person[p].emp=(s.person[p]&&s.person[p].emp)||""; }); }
   if(s.duty){ duty.pf1st=s.duty.pf1st||duty.pf1st; duty.pf2nd=s.duty.pf2nd||duty.pf2nd; }
   sessionDate = s.sessionDate||"";
@@ -2583,6 +2685,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.10.3",date:"2026-10-04",notes:["Comments on any grade: you can now add a comment to a task even when the grade is a 4 or 5 (good debrief points, strong technique). Tap any grade box → 💬 Add PF/PM comment, or type it in the lesson-guide pop-up under ‘Grade this task’. One PF comment and one PM comment per task per run, like the paper grade sheet.","Grade boxes with a comment show a small blue dot; a blue ‘Comments’ panel lists them under the run, on the AIMS page per student, and in the PDF (flown-order and AIMS-order pages). The required below-standard justification for grades of 3 or below is unchanged."]},
  {v:"2026.10.1",date:"2026-10-04",notes:["Updated to CQMV.1 Rev 2026.09.24.","SPOT is now three circuits: (1) CAT III / Autoland 28R, (2) Rapid Depressurization / Emergency Descent at FL250 with position freeze, (3) Main Deck Fire / Expedited Freighter Descent via ILUDY to the RNAV RWY 10L. New SPOT profile and lesson-guide pop-ups.","SPOT grade sheet columns now follow the flown order (6.7, 7.2, 10.3.1, 10.2.1). AIMS entry order unchanged: 6.7, 7.2, 10.2.1, 10.3.1.","Added the KSFO 12-1 RNAV (GPS) Rwy 10L chart for SPOT Circuit 3 — a third chart pill on the SPOT profile, plus chart buttons in the Main Deck Fire, ILUDY, RNAV 10L and Landing 10L pop-ups.","MV: Circuit 2 now starts at a 5 NM final (was 3 NM). Lesson-guide pop-ups refreshed to the new revision text (clearance FL290, PAN-PAN, RTO pro tip, Flaps 20 reset)."]},
  {v:"2026.07.54",date:"2026-07-18",notes:["Run headers now show the PF and PM names and duty next to the PF-1st / PF-2nd label — on the run sheet and the PDF.","Below-standard justifications now appear under each run on the flown-order pages, and under each student on the AIMS tab and in the AIMS Entry Order PDF.","AIMS views now highlight only what you must enter into AIMS: cells that are not a 4 are shaded (a grade to enter) and N/A cells are shaded to set, while 4s are faded — the shading is chosen to also read on a grayscale printout.","Bolder grid lines and grade numbers for easier reading across a row."]},
  {v:"2026.07.53",date:"2026-07-16",notes:["Help menu brought current: the grading topic no longer lists N/A as a grade option (it was removed), and the duty-specific N/A is now described correctly - graded on the run where the Captain is PF and N/A on the other run. To mark a whole task not observed, use the column header, as the Help's 'N/A cells' topic explains."]},
@@ -2678,7 +2781,7 @@ function newCrew(){
   ]);
 }
 function doNew(){
-  clearObj(state); clearObj(justCell);
+  clearObj(state); clearObj(justCell); clearObj(taskNotes);
   person.pf1st.name=""; person.pf1st.emp=""; person.pf2nd.name=""; person.pf2nd.emp="";
   duty.pf1st="CA"; duty.pf2nd="FO"; sessionDate=todayISO(); dateUserSet=false; flip.MV=false; flip.SPOT=false;
   clearObj(timers); clearObj(incReason); clearObj(ssNotes); instructor.name=""; instructor.emp=""; take.pf1st="1"; take.pf2nd="1"; RUN=1; EX="MV";
@@ -2779,6 +2882,15 @@ function makePdf(){
         }
       });
       y=doc.lastAutoTable.finalY + 12;
+      { const cr=prCommentsRun(ex,run);
+        if(cr.length){
+          if(y>540){ doc.addPage(); y=M; }
+          doc.setFontSize(9); doc.setFont(undefined,"bold"); doc.setTextColor(30,58,95);
+          doc.text(ex+" Run "+run+" \u2014 Comments", M, y); y+=13;
+          doc.setTextColor(0,0,0); doc.setFontSize(8); doc.setFont(undefined,"normal");
+          cr.forEach(function(line){ var w=doc.splitTextToSize(line, 730); if(y + w.length*10 > 560){ doc.addPage(); y=M; } doc.text(w, M+8, y); y += w.length*10 + 3; });
+          y+=6;
+        } }
       const jr=prJustTextRun(ex,run);
       if(jr.length){
         if(y>540){ doc.addPage(); y=M; }
@@ -2825,6 +2937,17 @@ function makePdf(){
           didParseCell:(dd)=>{ if(dd.section==="body"&&dd.column.index>0){ const ev=evByCode(events,order[dd.row.index]); const role=["","SOP_PM","CRM_PM"][dd.column.index]; const c=prCell(ex,pmR,ev,role); if(c.na){dd.cell.styles.fillColor=[174,195,222];dd.cell.styles.textColor=[18,28,55];dd.cell.styles.fontStyle="bold";} else if(c.t==="4"){dd.cell.styles.textColor=[176,186,199];dd.cell.styles.fontStyle="normal";} else {dd.cell.styles.fillColor=[201,168,74];dd.cell.styles.fontStyle="bold";dd.cell.styles.textColor=c.below?[130,20,15]:[20,20,20];} } }
         });
         y=doc.lastAutoTable.finalY+12;
+        { const sc=prCommentsForStudent(ex, pfR, pmR, order);
+          if(sc.length){
+            const ph=doc.internal.pageSize.getHeight();
+            if(y+(sc.length+1)*11 > ph-30){ doc.addPage(); y=M; }
+            doc.setFontSize(8); doc.setFont(undefined,"bold"); doc.setTextColor(30,58,95);
+            doc.text("Comments \u2014 this student:", M, y); y+=12;
+            doc.setTextColor(0,0,0); doc.setFont(undefined,"normal"); doc.setFontSize(7.5);
+            sc.forEach(function(line){ var wr=doc.splitTextToSize(line, 730); if(y+wr.length*9 > ph-28){ doc.addPage(); y=M; } doc.text(wr, M+8, y); y+=wr.length*9+2; });
+            y+=8;
+          }
+        }
         { const sj=prJustForStudent(ex, pfR, pmR);
           if(sj.length){
             const ph=doc.internal.pageSize.getHeight();
