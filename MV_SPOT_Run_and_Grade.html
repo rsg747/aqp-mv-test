@@ -343,6 +343,19 @@
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:6px 2px 0}
   .tbtn2{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;
     font-size:13px;font-weight:800;color:#37424f;cursor:pointer}
+
+  /* ---- simulator discrepancies ---- */
+  .tbtn2.simdisc{border-color:#d9a54a;color:#7a4b06;background:#fffaf0}
+  .tbtn2.simdisc.has{background:#fde9c4;border-color:#c98a1f;font-weight:800}
+  .sd-list{margin:10px 0 4px;padding:0;list-style:none}
+  .sd-item{display:flex;gap:8px;align-items:flex-start;border:1px solid #ecd9b8;background:#fffaf2;border-radius:8px;padding:8px 10px;margin-bottom:6px}
+  .sd-item .sd-n{font-weight:800;color:#7a4b06;min-width:22px}
+  .sd-item .sd-t{font-size:11.5px;color:#7a6a55;white-space:nowrap;margin-top:1px}
+  .sd-item .sd-x{flex:1;font-size:13.5px;color:#26313d;white-space:pre-wrap}
+  .sd-item .sd-del{border:none;background:#f6dcd8;color:#a3271b;border-radius:6px;padding:4px 9px;font-weight:800;cursor:pointer}
+  .sd-empty{font-size:12.5px;color:#7a6a55;margin:8px 0}
+  .sd-row{display:flex;gap:8px;margin-top:6px}
+  .sd-row textarea{flex:1;min-height:64px}
   .tbtn2:active{transform:translateY(1px)}
   .tbtn2.pdf{background:var(--navy);color:#fff;border-color:var(--navy)}
   .tb-status{font-size:11px;color:#a3271b;font-weight:700}
@@ -541,6 +554,7 @@ window.CHARTS = {
     <button type="button" class="tbtn2" data-tb="saved">Saved sessions</button>
     <button type="button" class="tbtn2" data-tb="new">New crew</button>
     
+    <button type="button" class="tbtn2 simdisc" data-tb="simdisc" id="simDiscBtn">🛠 Sim discrepancies</button>
     <button type="button" class="tbtn2 notify" data-tb="notify" id="notifyBtn">Email notification</button>
     <button type="button" class="tbtn2 pdf" data-tb="pdf">Save as PDF</button>
     <button type="button" class="helpbtn" data-help="__index">? Help</button>
@@ -951,7 +965,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.5";
+const VERSION = "2026.10.7";
 const VERSION_DATE = "2026-10-04";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
@@ -1218,6 +1232,67 @@ const justCell = {};
 
 /* ---- task comments: per task, per side (PF/PM), per run — any grade, incl. 4/5 ---- */
 const taskNotes = {};
+
+/* ---- simulator discrepancies (recorded at end of session; printed last in the PDF) ---- */
+const simDisc = {fstd:"", items:[]};
+
+/* ---- FSTD (simulator) selection — B747-400 / B747-8 FFS from the AQP Application FFS list.
+   When the tool is tied into AIMS, fstdSel will be set automatically from the AIMS Facility. ---- */
+const FSTD_LIST = [
+  {faa:"584",  short:"Boeing Miami",       loc:"Boeing Training and Flight Services, Miami, FL", type:"B747-400", trainer:"3",   level:"D"},
+  {faa:"1091", short:"Boeing Miami",       loc:"Boeing Training and Flight Services, Miami, FL", type:"B747-400", trainer:"N/A", level:"D"},
+  {faa:"1264", short:"Boeing Miami",       loc:"Boeing Training and Flight Services, Miami, FL", type:"B747-8",   trainer:"N/A", level:"D"},
+  {faa:"267",  short:"South Coast Miami",  loc:"South Coast Simulation, Inc., Miami, FL",        type:"B747-400", trainer:"N/A", level:"D"},
+  {faa:"420",  short:"South Coast Miami",  loc:"South Coast Simulation, Inc., Miami, FL",        type:"B747-400", trainer:"N/A", level:"D"},
+  {faa:"1012", short:"UPS Anchorage",      loc:"United Parcel Service (UPS), Anchorage, AK",     type:"B747-400", trainer:"N/A", level:"D"}
+];
+let fstdSel = "";
+function fstdById(id){ return FSTD_LIST.find(f=>f.faa===String(id)) || null; }
+function fstdLabel(f){ if(!f) return ""; return f.short+" \u00b7 "+f.type+(f.trainer!=="N/A"?(" \u00b7 SIM "+f.trainer):"")+" \u00b7 FAA "+f.faa+" (Level "+f.level+")"; }
+function fstdLong(f){ if(!f) return ""; return f.loc+" \u2014 "+f.type+(f.trainer!=="N/A"?(" SIM "+f.trainer):"")+" \u2014 FAA designation "+f.faa+", Level "+f.level; }
+function fstdOptsHTML(){ return `<option value="">Select FSTD\u2026</option>`+FSTD_LIST.map(f=>`<option value="${f.faa}"${f.faa===fstdSel?" selected":""}>${fstdLabel(f)}</option>`).join(""); }
+function setFstd(id){ fstdSel=String(id||""); const f=fstdById(fstdSel); if(typeof simDisc!=="undefined"){ simDisc.fstd = f ? fstdLabel(f) : simDisc.fstd; } if(typeof autosave==="function"){ try{ autosave(); }catch(e){} } }
+function _sdTime(){ const d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function _sdEsc(t){ return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function updateSimDiscBtn(){
+  const b=document.querySelector('[data-tb="simdisc"]'); if(!b) return;
+  const n=(simDisc.items||[]).length;
+  b.textContent = n ? ("🛠 Sim discrepancies ("+n+")") : "🛠 Sim discrepancies";
+  b.classList.toggle("has", n>0);
+}
+function _sdSave(){ updateSimDiscBtn(); if(typeof autosave==="function"){ try{ autosave(); }catch(e){} } }
+function openSimDisc(){
+  { const f=fstdById(fstdSel); if(f && !simDisc.fstd) simDisc.fstd=fstdLabel(f); }
+  const wrap=document.createElement("div");
+  wrap.innerHTML=
+    `<label class="mo-lbl">Simulator / FSTD ID <span style="font-weight:600;color:#8a8f96">(filled from the FSTD selected at the top)</span></label>`+
+    `<input class="mo-input" type="text" data-sd="fstd" placeholder="e.g. 747-400 SIM 3" value="${_sdEsc(simDisc.fstd||"")}">`+
+    `<div class="mo-lbl" style="margin-top:12px">Discrepancies this session</div>`+
+    `<ul class="sd-list" data-sd="list"></ul>`+
+    `<label class="mo-lbl" style="margin-top:8px">Add a discrepancy</label>`+
+    `<div class="sd-row"><textarea class="mo-input" data-sd="new" placeholder="What happened — system / IOS / visual / motion / control loading, when, and any reset done…"></textarea></div>`+
+    `<div style="margin-top:8px;text-align:right"><button type="button" class="mo-btn primary" data-sd="add">＋ Add</button></div>`+
+    `<div class="sd-empty" style="margin-top:10px">These print at the end of the PDF so they can be written up in the simulator logbook / reported to sim maintenance. They are not part of the AIMS grade record.</div>`;
+  const list=wrap.querySelector('[data-sd="list"]');
+  const draw=()=>{
+    list.innerHTML="";
+    if(!simDisc.items.length){ const e=document.createElement("div"); e.className="sd-empty"; e.textContent="None recorded yet."; list.appendChild(e); return; }
+    simDisc.items.forEach((it,i)=>{
+      const li=document.createElement("li"); li.className="sd-item";
+      li.innerHTML=`<span class="sd-n">${i+1}.</span><span class="sd-t">${_sdEsc(it.t||"")}</span><span class="sd-x">${_sdEsc(it.text||"")}</span><button type="button" class="sd-del" title="Delete">✕</button>`;
+      li.querySelector(".sd-del").addEventListener("click",()=>{ simDisc.items.splice(i,1); _sdSave(); draw(); });
+      list.appendChild(li);
+    });
+  };
+  draw();
+  wrap.querySelector('[data-sd="fstd"]').addEventListener("input",(e)=>{ simDisc.fstd=e.target.value; _sdSave(); });
+  const ta=wrap.querySelector('[data-sd="new"]');
+  const add=()=>{ const v=(ta.value||"").trim(); if(!v){ ta.focus(); return; } simDisc.items.push({t:_sdTime(), text:v}); ta.value=""; _sdSave(); draw(); toast("Discrepancy added"); };
+  wrap.querySelector('[data-sd="add"]').addEventListener("click",add);
+  showModal("Simulator discrepancies", wrap, [
+    {label:"Done", kind:"primary", onClick:()=>{ const v=(ta.value||"").trim(); if(v){ simDisc.items.push({t:_sdTime(), text:v}); _sdSave(); } closeModal(); }}
+  ]);
+}
 function tnKey(ex,run,code,side){ return ex+"|"+run+"|"+code+"|"+side; }
 function sideOf(role){ return /_PM$/.test(role) ? "PM" : "PF"; }
 function tnGet(ex,run,code,side){ return String(taskNotes[tnKey(ex,run,code,side)]||"").trim(); }
@@ -1560,6 +1635,7 @@ function buildSheet(ex){
       <label>Date <input type="date" data-field="date" value="${sessionDate}"></label>
       <label>I/E <input type="text" data-instr="name" value="${instructor.name.replace(/"/g,'&quot;')}"></label>
       <label>Emp <input type="text" size="6" data-instr="emp" value="${instructor.emp.replace(/"/g,'&quot;')}"></label>
+      <label>FSTD <select class="dutysel" data-fstd>${fstdOptsHTML()}</select></label>
     </div>
     <div class="crewwrap">
     ${crewRowHTML(leadFor(ex),"PF 1st",ex)}
@@ -1588,6 +1664,7 @@ function buildSheet(ex){
   });
   wrap.querySelectorAll("[data-swap]").forEach(b=>b.addEventListener("click",swapCrew));
   // name / emp / date persist per person across runs & exercises
+  wrap.querySelectorAll("[data-fstd]").forEach(sel=>{ sel.addEventListener("change",()=>{ setFstd(sel.value); }); });
   wrap.querySelectorAll(".meta input[data-instr]").forEach(inp=>{
     inp.addEventListener("input",()=>{ instructor[inp.dataset.instr]=inp.value; });
   });
@@ -2666,7 +2743,7 @@ function clearObj(o){ for(const k in o) delete o[k]; }
 function snapshot(){
   const t={}; for(const k in timers){ const T=timers[k]; t[k]= T.running ? (T.elapsedMs+(Date.now()-T.startMs)) : T.elapsedMs; }
   return { ver:VERSION, savedAt:new Date().toISOString(),
-    state:{...state}, justCell:JSON.parse(JSON.stringify(justCell)), taskNotes:JSON.parse(JSON.stringify(taskNotes)),
+    state:{...state}, justCell:JSON.parse(JSON.stringify(justCell)), taskNotes:JSON.parse(JSON.stringify(taskNotes)), simDisc:JSON.parse(JSON.stringify(simDisc)), fstdSel:fstdSel,
     person:JSON.parse(JSON.stringify(person)), duty:{...duty}, flip:{...flip}, sessionDate, dateUserSet, crewSession:JSON.parse(JSON.stringify(crewSession)), timers:t, incReason:{...incReason}, ssNotes:JSON.parse(JSON.stringify(ssNotes)), instructor:{...instructor}, take:{...take} };
 }
 function applySnapshot(s){
@@ -2674,6 +2751,8 @@ function applySnapshot(s){
   clearObj(state); Object.assign(state, s.state||{});
   clearObj(justCell); Object.assign(justCell, s.justCell||{});
   clearObj(taskNotes); Object.assign(taskNotes, s.taskNotes||{});
+  if(s.fstdSel!==undefined) fstdSel=String(s.fstdSel||"");
+  simDisc.fstd=(s.simDisc&&s.simDisc.fstd)||""; simDisc.items=(s.simDisc&&Array.isArray(s.simDisc.items))?s.simDisc.items.slice():[]; try{ updateSimDiscBtn(); }catch(e){}
   if(s.person){ ["pf1st","pf2nd"].forEach(p=>{ person[p].name=(s.person[p]&&s.person[p].name)||""; person[p].emp=(s.person[p]&&s.person[p].emp)||""; }); }
   if(s.duty){ duty.pf1st=s.duty.pf1st||duty.pf1st; duty.pf2nd=s.duty.pf2nd||duty.pf2nd; }
   sessionDate = s.sessionDate||"";
@@ -2693,6 +2772,8 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.10.7",date:"2026-10-04",notes:["New FSTD selector next to the I/E employee number — the B747-400 and B747-8 full flight simulators from the AQP Application FFS list (Boeing Miami SIM 3 · FAA 584, Boeing Miami FAA 1091, Boeing Miami B747-8 FAA 1264, South Coast Miami FAA 267 and 420, UPS Anchorage FAA 1012). The selected sim prints in the PDF header and automatically fills the Simulator / FSTD ID in Sim discrepancies. It is kept for the next crew. (Once tied into AIMS, it will be selected automatically.)"]},
+ {v:"2026.10.6",date:"2026-10-04",notes:["New 🛠 Sim discrepancies button on the toolbar: record simulator discrepancies (with the Simulator / FSTD ID and an automatic time stamp) during or at the end of the session. The button shows the count, entries are saved with the session, and they print on the last page of the PDF for the simulator logbook / sim maintenance. Not part of the AIMS grade record. Cleared by New crew (the FSTD ID is kept for the next crew)."]},
  {v:"2026.10.5",date:"2026-10-04",notes:["AIMS Entry Order (PDF): each student's employee number now prints next to the name.","Chart viewer: the ✕ Close button moved to the left of the title bar and sits below the iPad status bar (no more tapping under the battery icon), plus a large ‘✕ Close chart’ button at the bottom right."]},
  {v:"2026.10.4",date:"2026-10-04",notes:["‘Take’ is now ‘Attempt’ and matches the new AIMS Module Attempt Status list: Initial Attempt, Remedial Attempt 1–4, Repeat Attempt 1–4 (default Initial Attempt). It prints on the PDF and in the repeat-event email; older saved sessions convert automatically (Take 1 = Initial Attempt)."]},
  {v:"2026.10.3",date:"2026-10-04",notes:["Comments on any grade: you can now add a comment to a task even when the grade is a 4 or 5 (good debrief points, strong technique). Tap any grade box → 💬 Add PF/PM comment, or type it in the lesson-guide pop-up under ‘Grade this task’. One PF comment and one PM comment per task per run, like the paper grade sheet.","Grade boxes with a comment show a small blue dot; a blue ‘Comments’ panel lists them under the run, on the AIMS page per student, and in the PDF (flown-order and AIMS-order pages). The required below-standard justification for grades of 3 or below is unchanged."]},
@@ -2791,7 +2872,7 @@ function newCrew(){
   ]);
 }
 function doNew(){
-  clearObj(state); clearObj(justCell); clearObj(taskNotes);
+  clearObj(state); clearObj(justCell); clearObj(taskNotes); simDisc.items=[]; try{ updateSimDiscBtn(); }catch(e){}
   person.pf1st.name=""; person.pf1st.emp=""; person.pf2nd.name=""; person.pf2nd.emp="";
   duty.pf1st="CA"; duty.pf2nd="FO"; sessionDate=todayISO(); dateUserSet=false; flip.MV=false; flip.SPOT=false;
   clearObj(timers); clearObj(incReason); clearObj(ssNotes); instructor.name=""; instructor.emp=""; take.pf1st="Initial Attempt"; take.pf2nd="Initial Attempt"; RUN=1; EX="MV";
@@ -2865,7 +2946,7 @@ function makePdf(){
   doc.setFontSize(9); doc.setFont(undefined,"normal");
   doc.text(`Date: ${sessionDate||"—"}     Version ${VERSION}`, M, y); y+=13;
   doc.text(`PF 1st: ${person.pf1st.name||"—"} (Emp ${person.pf1st.emp||"—"}, ${duty.pf1st})     PF 2nd: ${person.pf2nd.name||"—"} (Emp ${person.pf2nd.emp||"—"}, ${duty.pf2nd})`, M, y); y+=13;
-  doc.text(`Instructor: ${instructor.name||"—"} (Emp ${instructor.emp||"—"})`, M, y); y+=6;
+  doc.text(`Instructor: ${instructor.name||"—"} (Emp ${instructor.emp||"—"})     FSTD: ${fstdSel?fstdLabel(fstdById(fstdSel)):"—"}`, M, y); y+=6;
   const rows=[["H","Handling – PF"],["SOP","SOP – PF"],["A","Automation – PF"],["CRM","CRM – PF"],["SOP_PM","SOP – PM"],["CRM_PM","CRM – PM"]];
   doc.setFontSize(9); doc.setFont(undefined,"italic"); doc.setTextColor(90,90,90); doc.text("Grade record \u2014 flown (lesson-guide) order.", M, y); y+=13; doc.setTextColor(0,0,0); doc.setFont(undefined,"normal");
   ["MV","SPOT"].forEach((ex,exi)=>{
@@ -3024,6 +3105,22 @@ function makePdf(){
       y+=14;
     });
   }
+  // ---- simulator discrepancies (printed last) ----
+  if(simDisc.items && simDisc.items.length){
+    doc.addPage(); y=M;
+    doc.setFontSize(13); doc.setFont(undefined,"bold"); doc.setTextColor(122,75,6);
+    doc.text("Simulator Discrepancies \u2014 for the simulator logbook / sim maintenance", M, y); y+=16;
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,"normal");
+    doc.text("Simulator / FSTD: "+(fstdSel?fstdLong(fstdById(fstdSel)):(simDisc.fstd||"\u2014"))+"     Date: "+(sessionDate||"\u2014")+"     Instructor: "+(instructor.name||"\u2014")+" (Emp "+(instructor.emp||"\u2014")+")", M, y); y+=16;
+    simDisc.items.forEach(function(it,i){
+      var w=doc.splitTextToSize((i+1)+". ["+(it.t||"")+"]  "+(it.text||""), 730);
+      if(y + w.length*12 > 560){ doc.addPage(); y=M; }
+      doc.text(w, M, y); y += w.length*12 + 6;
+    });
+    doc.setFontSize(8); doc.setTextColor(110,110,110);
+    if(y>540){ doc.addPage(); y=M; }
+    doc.text("Not part of the AIMS / FAA grade record.", M, y+6); doc.setTextColor(0,0,0);
+  }
   return doc;
 }
 function pdfFileName(){
@@ -3106,7 +3203,7 @@ function buildPrintReport(){
 /* toolbar wiring */
 function initToolbar(){
   const bind=(name,fn)=>{ const b=document.querySelector(`[data-tb="${name}"]`); if(b) b.onclick=fn; };
-  bind("save",saveSession); bind("saved",openSaved); bind("new",newCrew); bind("pdf",savePDF); bind("notify",onNotify); bind("importroster",onImportRoster); updateRosterBtn();
+  bind("save",saveSession); bind("saved",openSaved); bind("new",newCrew); bind("pdf",savePDF); bind("notify",onNotify); bind("importroster",onImportRoster); updateRosterBtn(); bind("simdisc",openSimDisc); updateSimDiscBtn();
   const st=document.getElementById("tbstatus");
   if(st) st.textContent = lsAvail()? "" : "Note: in-app saving isn't available here — use Save as PDF to keep records.";
 }
