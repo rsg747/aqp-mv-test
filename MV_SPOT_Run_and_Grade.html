@@ -965,8 +965,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.7";
-const VERSION_DATE = "2026-10-04";
+const VERSION = "2026.10.11";
+const VERSION_DATE = "2026-10-05";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
 const MV_EVENTS = [
@@ -1239,6 +1239,8 @@ const simDisc = {fstd:"", items:[]};
 /* ---- FSTD (simulator) selection — B747-400 / B747-8 FFS from the AQP Application FFS list.
    When the tool is tied into AIMS, fstdSel will be set automatically from the AIMS Facility. ---- */
 const FSTD_LIST = [
+  {faa:"722",  short:"Atlas Miami",        loc:"Atlas Air Inc. Training Center, Miami, FL",     type:"B747-400", trainer:"1",   level:"C"},
+  {faa:"1092", short:"Atlas Miami",        loc:"Atlas Air Inc. Training Center, Miami, FL",     type:"B747-400", trainer:"2",   level:"D"},
   {faa:"584",  short:"Boeing Miami",       loc:"Boeing Training and Flight Services, Miami, FL", type:"B747-400", trainer:"3",   level:"D"},
   {faa:"1091", short:"Boeing Miami",       loc:"Boeing Training and Flight Services, Miami, FL", type:"B747-400", trainer:"N/A", level:"D"},
   {faa:"1264", short:"Boeing Miami",       loc:"Boeing Training and Flight Services, Miami, FL", type:"B747-8",   trainer:"N/A", level:"D"},
@@ -2772,6 +2774,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.10.11",date:"2026-10-05",notes:["FSTD list: added the Atlas Air Training Center Miami simulators — SIM 1 (FAA 722, Level C) and SIM 2 (FAA 1092, Level D) — from AQP Application Table B.1.6."]},
  {v:"2026.10.7",date:"2026-10-04",notes:["New FSTD selector next to the I/E employee number — the B747-400 and B747-8 full flight simulators from the AQP Application FFS list (Boeing Miami SIM 3 · FAA 584, Boeing Miami FAA 1091, Boeing Miami B747-8 FAA 1264, South Coast Miami FAA 267 and 420, UPS Anchorage FAA 1012). The selected sim prints in the PDF header and automatically fills the Simulator / FSTD ID in Sim discrepancies. It is kept for the next crew. (Once tied into AIMS, it will be selected automatically.)"]},
  {v:"2026.10.6",date:"2026-10-04",notes:["New 🛠 Sim discrepancies button on the toolbar: record simulator discrepancies (with the Simulator / FSTD ID and an automatic time stamp) during or at the end of the session. The button shows the count, entries are saved with the session, and they print on the last page of the PDF for the simulator logbook / sim maintenance. Not part of the AIMS grade record. Cleared by New crew (the FSTD ID is kept for the next crew)."]},
  {v:"2026.10.5",date:"2026-10-04",notes:["AIMS Entry Order (PDF): each student's employee number now prints next to the name.","Chart viewer: the ✕ Close button moved to the left of the title bar and sits below the iPad status bar (no more tapping under the battery icon), plus a large ‘✕ Close chart’ button at the bottom right."]},
