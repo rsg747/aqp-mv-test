@@ -969,8 +969,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.13";
-const VERSION_DATE = "2026-10-05";
+const VERSION = "2026.10.14";
+const VERSION_DATE = "2026-10-14";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
 const MV_EVENTS = [
@@ -1398,7 +1398,7 @@ function attemptOptsHTML(sel){ sel=normAttempt(sel); return ATTEMPT_OPTS.map(o=>
 function nextAttemptNo(v){ v=normAttempt(v); if(v==="Initial Attempt") return 1; return Math.min((parseInt(v.replace(/\D/g,""),10)||0)+1,4); }
 /* ---- crew roster lookup — LOCAL import only, never published, never leaves the device ---- */
 let ROSTER = {};
-try{ ROSTER = JSON.parse(localStorage.getItem("AQP_ROSTER_v1")||"{}"); }catch(e){ ROSTER={}; }
+try{ localStorage.removeItem("AQP_ROSTER_v1"); }catch(e){}   // retired roster: never let a stored list change duty
 function rosterCount(){ return Object.keys(ROSTER).length; }
 function rosterLookup(emp){ emp=String(emp==null?"":emp).trim(); return (emp && ROSTER[emp]) ? ROSTER[emp] : null; }
 function normRank(s){ s=String(s||"").toUpperCase(); if(/(^|[^A-Z])CA([^A-Z]|$)|CAPT|CAPTAIN/.test(s)) return "CA"; if(/(^|[^A-Z])FO([^A-Z]|$)|FIRST OFFICER|F\/O/.test(s)) return "FO"; return ""; }
@@ -1663,10 +1663,12 @@ function buildSheet(ex){
   wrap.querySelector(".profhost").appendChild(buildProfile(ex));
   wrap.querySelector(".gridwrap").appendChild(buildGrid(ex,events));
   wrap.querySelectorAll(".dutysel").forEach(sel=>{
-    sel.addEventListener("change",()=>{
-      duty[sel.dataset.person]=sel.value;
-      render();   // re-apply duty rules everywhere
-    });
+    if(!sel.dataset.person) return;            // the Attempt select shares this class
+    sel.dataset.rendered=sel.value;            // what the box showed when it was drawn
+    const commit=()=>{ if(duty[sel.dataset.person]!==sel.value){ duty[sel.dataset.person]=sel.value; render(); } };
+    sel.addEventListener("change",commit);     // re-apply duty rules everywhere
+    sel.addEventListener("input",commit);      // iPad: some pickers report via input
+    sel.addEventListener("blur",commit);       // iPad: catch a pick that fired no event
   });
   wrap.querySelectorAll("[data-swap]").forEach(b=>b.addEventListener("click",swapCrew));
   // name / emp / date persist per person across runs & exercises
@@ -2804,6 +2806,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.10.14",date:"2026-10-14",notes:["Duty fix (CA/CA and FO/FO): a Duty pick on the iPad now always takes on the first try. The app re-reads the Duty boxes before every redraw and on every tap, and the retired crew-list lookup can no longer change a pilot's duty when an Emp number is entered."]},
  {v:"2026.10.13",date:"2026-10-05",notes:["Position tracking: tapping a point on the profile now lights that point green and highlights its grade column(s) below; tapping a grade column header lights the matching point(s) on the profile. Both stay lit after closing the pop-up and after switching runs, so you can see where you are in the profile at a glance."]},
  {v:"2026.10.11",date:"2026-10-05",notes:["FSTD list: added the Atlas Air Training Center Miami simulators — SIM 1 (FAA 722, Level C) and SIM 2 (FAA 1092, Level D) — from AQP Application Table B.1.6."]},
  {v:"2026.10.7",date:"2026-10-04",notes:["New FSTD selector next to the I/E employee number — the B747-400 and B747-8 full flight simulators from the AQP Application FFS list (Boeing Miami SIM 3 · FAA 584, Boeing Miami FAA 1091, Boeing Miami B747-8 FAA 1264, South Coast Miami FAA 267 and 420, UPS Anchorage FAA 1012). The selected sim prints in the PDF header and automatically fills the Simulator / FSTD ID in Sim discrepancies. It is kept for the next crew. (Once tied into AIMS, it will be selected automatically.)"]},
@@ -3438,7 +3441,19 @@ function swapCrew(){
     if(confirm("Swap PF 1st and PF 2nd for "+ex+" only?\nGrades stay where they are.")) doSwap();
   }
 }
+/* Duty box is the source of truth: if what a Duty box shows differs from the
+   stored duty (an iPad pick that fired no event), adopt the box's value. */
+function syncDutyFromUI(){
+  let changed=false;
+  document.querySelectorAll('select.dutysel[data-person]').forEach(sel=>{
+    const pk=sel.dataset.person, v=sel.value;
+    if((v==="CA"||v==="FO"||v==="Seat Support") && sel.dataset.rendered!==undefined && v!==sel.dataset.rendered && duty[pk]!==v){ duty[pk]=v; changed=true; }
+  });
+  return changed;
+}
+document.addEventListener("pointerdown",()=>{ try{ if(syncDutyFromUI()) render(); }catch(e){} },true);
 function render(){
+  try{ syncDutyFromUI(); }catch(e){}
   document.body.classList.toggle("run1",RUN===1);
   document.body.classList.toggle("run2",RUN===2);
   document.body.classList.toggle("on-aims",EX==="AIMS");
