@@ -969,8 +969,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.14";
-const VERSION_DATE = "2026-10-14";
+const VERSION = "2026.10.15";
+const VERSION_DATE = "2026-10-16";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
 const MV_EVENTS = [
@@ -989,6 +989,7 @@ const SPOT_EVENTS = [
   {code:"7.2",   nm:"Autoland 28R",       rows:{H:1,SOP:1,A:1,CRM:1}},
   {code:"10.3.1",nm:"Emergency Descent",  rows:{H:0,SOP:1,A:0,CRM:1}},
   {code:"10.2.1",nm:"Smoke / Fire / Fumes",rows:{H:0,SOP:1,A:0,CRM:1}},
+  {code:"2.5.1", nm:"RTO (Crew Task)",    rows:{H:1,SOP:1,A:0,CRM:1}},
 ];
 // PF rows in display order, PM rows below
 const PF_ROWS = [["H","Handling – PF"],["SOP","SOP – PF"],["A","Automation – PF"],["CRM","CRM – PF"]];
@@ -1019,19 +1020,20 @@ const SPOT_PROFILE = {
   axis:["0:00","0:15","0:30","0:45"],
   nodes:[
     {t:0.03, alt:0.18, lbl:"ILS 28R 5–8 final", above:true, plane:true},
-    {t:0.10, alt:0.09, lbl:"CAT III Appr", above:true, plane:true},
-    {t:0.16, alt:0.03, lbl:"Autoland 28R", above:false, plane:true},
-    {t:0.27, alt:0.82, lbl:"FL250 · Pos Freeze", sub:"N37.45 / W124.45", above:true, plane:true},
-    {t:0.37, alt:0.58, lbl:"Cabin Alt · Emerg Desc", above:false, crit:true, plane:true},
-    {t:0.48, alt:0.82, lbl:"Reset FL250", above:true, plane:true},
-    {t:0.59, alt:0.82, lbl:"Main Deck Fire", above:true, crit:true, plane:true},
-    {t:0.74, alt:0.26, lbl:"ILUDY 3,500", above:false, plane:true},
-    {t:0.85, alt:0.15, lbl:"RNAV 10L Appr", above:true, plane:true},
-    {t:0.96, alt:0.05, lbl:"Landing 10L", above:true, plane:true},
+    {t:0.09, alt:0.09, lbl:"CAT III Appr", above:true, plane:true},
+    {t:0.14, alt:0.03, lbl:"Autoland 28R", above:false, plane:true},
+    {t:0.24, alt:0.82, lbl:"FL250 · Pos Freeze", sub:"N37.45 / W124.45", above:true, plane:true},
+    {t:0.33, alt:0.58, lbl:"Cabin Alt · Emerg Desc", above:false, crit:true, plane:true},
+    {t:0.42, alt:0.82, lbl:"Reset FL250", above:true, plane:true},
+    {t:0.52, alt:0.82, lbl:"Main Deck Fire", above:true, crit:true, plane:true},
+    {t:0.65, alt:0.26, lbl:"ILUDY 3,500", above:false, plane:true},
+    {t:0.75, alt:0.15, lbl:"RNAV 10L Appr", above:true, plane:true},
+    {t:0.84, alt:0.05, lbl:"Landing 10L", above:true, plane:true},
+    {t:0.95, alt:0.04, lbl:"RTO · Eng Fail 20 kt", sub:"FO PF → CA", above:true, crit:true, plane:true},
   ]
 };
 /* ---- MV lesson-guide content, keyed to MV_PROFILE node index ----
-   Sourced from CQMV.1 lesson guide Rev 2026.09.24 pp.8–13.
+   Sourced from CQMV.1 747 lesson guide Rev 2026.10.15 pp.8–13 (747-8 SIM 4 differences: LG8_OVR).
    Each node: phase, code(s), circuit, page ref, and any of:
    setup[], atc[{label,text}], tasks[{code,name,desc}], ip[] */
 const MV_LG = {
@@ -1118,7 +1120,7 @@ const MV_LG = {
      saAfter:["MV Circuit 2 is Complete, roll to the end and perform a 180º turn on runway for opposite direction departure (10L).",
               "Use Simulator Reset Guide to instruct specific controls for takeoff: Engine Fire Switch IN, Flaps 20, Fuel Control Switch to RUN, SB lever DOWN, AB RTO, Rudder Trim 0; CDU – Stab Trim – MCP and FMAs; TA/RA."],
      ip:["Pre-set IOS for next maneuver — POSITION: 10L Ready for Departure (Crew 180º turn on runway) · ENVIRONMENT: OVC 001, ¼ SM (1800 RVR) · AIRCRAFT: See \"QUICK SET SHEET\"",
-         "ADDITIONAL SETUP & ABNORMALS: Clear Malfunction: ENG FIRE quick-set engines and reset systems. · Arm Malfunction: ENG FIRE (Non-Extg) at 100 KTS ENGINE #2"]},
+         "ADDITIONAL SETUP & ABNORMALS: Clear Malfunction: ENG SEVERE DAMAGE, quick-set and reset systems. · Arm Malfunction: ENG FIRE (Non-Extg) at 100 KTS ENGINE #2"]},
   11:{phase:"Rejected Takeoff · Eng#2 Fire @ 100 kt", codes:"2.5.1", circuit:"Circuit 3", page:"LG p.13",
      setup:["Circuit 3: RTO to Evacuation — starts ready for departure on Runway 10L.",
             "Armed Malfunction: ENG FIRE (Non-Extg) at 100 KTS ENGINE #2",
@@ -1139,7 +1141,7 @@ const MV_LG = {
          "After first crewmember: return to MV Circuit 1 to alternate roles, advise crew. After second crewmember: MV complete — proceed to SPOT, advise crew."]},
 };
 /* ---- SPOT lesson-guide content, keyed to SPOT_PROFILE node index ----
-   Sourced verbatim from CQMV.1 Rev 2026.09.24 pp.14–17 (3 circuits). */
+   Sourced verbatim from CQMV.1 747 Rev 2026.10.15 pp.14–18 (4 circuits). 747-8 SIM 4 differences: LG8_OVR. */
 const SPOT_LG = {
   0:{phase:"ILS 28R · 5–8 NM Final (setup)", codes:"—", circuit:"SPOT setup", page:"LG p.14",
      sa:["Use Sim Init/Reset Guide to instruct specific controls to Flaps 20, airborne ready for approach",
@@ -1187,8 +1189,8 @@ const SPOT_LG = {
      ip:["The door checklist is not required (its condition has already occurred). Expect the crew to turn approximately 30 degrees off the airway during the descent.",
          "Circuit complete when the CABIN ALTITUDE immediate action items and the NNC are complete, the oxygen masks are donned with crew communications established, and the aircraft is established in a descent configured in accordance with the checklist. Do not wait for level off."]},
   5:{phase:"Reset FL250 · Position Freeze OFF", codes:"—", circuit:"Circuit 2 → 3", page:"LG p.16",
-     setup:["Circuit Complete. Reposition for next Circuit — POSITION: Reset altitude to FL250 · Same Lat/Long held (N37.45.00/W124.45.00) · HDG 080, 300 KTS · Once stabilized, POSITION FREEZE OFF",
-         "AIRCRAFT: CDU set cruise Altitude FL250, DIRECT TO KSFO · SPD | LNAV | VNAV PTH CMD"],
+     setup:["Circuit Complete. Reposition for next Circuit — POSITION: Reset altitude to FL250 · Same Lat/Long held (N37.45.00/W124.45.00) · HDG 080, 300 KTS · Once stabilized, POSITION FREEZE OFF; set Visibility 50 SM (or highest selectable)",
+         "AIRCRAFT: CDU set cruise Altitude FL250, DIRECT TO KSFO · SPD | LNAV | VNAV PTH CMD · Set up RNAV RWY 10L (ILUDY)"],
      ip:["Cleaning and stowing of masks is required following the completion of the SPOT. For most simulators, contact maintenance for stowing."]},
   6:{phase:"Main Deck Fire · Expedited Freighter Descent", codes:"10.2.1", circuit:"Circuit 3", page:"LG p.17",
      sa:["Aircraft is in cruise flight at FL250, just prior to TOD into KSFO (approximately 110 NM west).",
@@ -1207,16 +1209,32 @@ const SPOT_LG = {
      atc:[{label:"Established inbound", text:"MAYDAY GIANT 400 HEAVY, CONTACT SAN FRANCISCO TOWER ON 120.5."}]},
   8:{phase:"RNAV (GPS) RWY 10L Approach", codes:"—", circuit:"Circuit 3", page:"LG p.17",
      atc:[{label:"Once crew contacts tower", text:"MAYDAY GIANT 400 HEAVY, WINDS 190 AT 10, RUNWAY 10L CLEARED TO LAND."}]},
-  9:{phase:"Landing 10L · SPOT Complete", codes:"—", circuit:"Circuit 3", page:"LG p.17",
-     ip:["» Circuit Complete. After First Crewmember: Clear malfunctions, then Return to SPOT Circuit 1 to alternate roles. Advise Crew.",
+  9:{phase:"Landing 10L · Set up Circuit 4", codes:"—", circuit:"Circuit 3", page:"LG p.17",
+     setup:["Pre-Set IOS for next maneuver — POSITION: 10L Ready for Departure · ENVIRONMENT: Remains the same · AIRCRAFT: See \"QUICK SET SHEET\"",
+            "ADDITIONAL SETUP & ABNORMALS: Clear Malfunction: FIRE MAIN DECK, quick-set and reset systems. · Arm Malfunction: ENG FAIL (Flame Out) ENGINE 1 or 4 at 20 KTS Ground Speed"],
+     ip:["» Circuit Complete. Continue to next Circuit."]},
+  10:{phase:"RTO (Crew Task) · Eng Fail @ 20 KTS GS · FO starts TO as PF", codes:"2.5.1", circuit:"Circuit 4", page:"LG p.18",
+     setup:["NOTE: Crew Task. With a paired crew, this circuit is only completed once. Only CA1/CA2 and FO1/FO2 repeat it in the Second Half. This training is in addition to the RTO completed during the MV.",
+            "Starts on the runway ready for takeoff. FO or CA in Right seat begins the circuit as PF, CA as PM.",
+            "AIRCRAFT: ARM Engine Fail or Flame Out (ENGINE 1 or 4) at 20 KTS GS · POSITION: 10L ready for Takeoff",
+            "ENGINE FAIL occurs prior to thrust set at ~20 KTS Ground Speed."],
+     sa:["The Rejected Takeoff (RTO) maneuver shall be conducted with the Captain acting as Pilot Monitoring (PM) and the First Officer (or CA in the right seat) acting as Pilot Flying (PF) during the initial takeoff roll, for crew to experience an RTO prior to the “THRUST SET” callout, and transfer control to the CA accordingly to complete the RTO."],
+     tasks:[{code:"2.5.1", name:"Perform Rejected Takeoff Procedure",
+             desc:"◈ Graded crew task. Respond to crew’s reject call. Grade sheet NOTE: While the CA starts the takeoff as PM, they become the PF during the RTO. CA is always graded as PF for RTO, and FO is always graded as PM during an RTO."}],
+     atc:[{label:"Provide takeoff clearance after crew contacts tower",
+           text:"GIANT 400 HEAVY, WINDS 190 AT 10, RUNWAY 10L CLEARED FOR TAKEOFF, MAINTAIN 5,000, RNAV ORYAN."}],
+     ip:["The rating form will be filled out for the FO (or CA as FO) using the PM ratings. Example: FO does not maintain control of the airplane until the captain makes a positive input to the controls – SOP: 2, possible CRM: 2(SA)",
+         "The engine failure is nominally programmed at 20 knots ground speed. Instructors should ensure that the failure occurs after the FO has advanced the thrust levers and before the THRUST SET callout. The trigger speed may be adjusted as necessary to accomplish this training objective.",
+         "Grade sheet — CA/FO Pairing: Task is performed once (first half only). The FO initiates the takeoff as PF, then the CA becomes PF once the decision to reject has been made. CA/CA Pairing: Task will be performed twice (once in the first half and once in the second half) each CA must perform the maneuver once, where they initiate the takeoff as PM then become PF for the RTO. In a CA/CA pairing, each CA will receive PM ratings when occupying the right seat. FO/FO Pairing: Task will be performed twice (once in the first half and once in the second half) each FO must perform the maneuver once, where they initiate the takeoff as PF then become PM for the RTO. Mark N/A for FO PF ratings.",
+         "» After First Crewmember: Return to SPOT Circuit 1 to alternate roles. Advise Crew.",
          "» After Second Crewmember: SPOT Complete. Proceed to Debriefing. Advise Crew.",
-         "If time permits and all objectives are Complete/Satisfactory, review the pilot's CQMT1.1 AIMS form and use the CQ Maintain Recency lesson guide to conduct any additional takeoffs and manual landings needed to ensure the pilot departs the Training Center with 3 takeoffs and 3 landings, in accordance with AQPM 5.4."]},
+         "Once all objectives are Complete/Satisfactory, review the pilot's CQMT1.1 AIMS form and use the CQ Maintain Recency lesson guide to conduct any additional takeoffs and manual landings needed to ensure the pilot departs the Training Center with 3 takeoffs and 3 landings, in accordance with AQPM 5.4."]},
 };
 /* which chart(s) are relevant to each profile node, per exercise (by index) */
 const NODE_CHARTS = {
   MV: { 0:["airport"], 4:["ils"], 5:["ils"], 6:["ils"], 7:["ils"], 8:["ils"], 9:["ils"],
         10:["airport"], 11:["airport"], 12:["airport"] },
-  SPOT: { 0:["ils"], 1:["ils"], 2:["ils","airport"], 6:["rnav10l"], 7:["rnav10l"], 8:["rnav10l"], 9:["rnav10l","airport"] }
+  SPOT: { 0:["ils"], 1:["ils"], 2:["ils","airport"], 6:["rnav10l"], 7:["rnav10l"], 8:["rnav10l"], 9:["rnav10l","airport"], 10:["airport"] }
 };
 const CHART_LABELS = { airport:"KSFO 10-9 Airport Diagram", ils:"KSFO 11-3 ILS 28R", rnav10l:"KSFO 12-1 RNAV (GPS) Rwy 10L" };
 const MV_BRIEF_L = "Takeoff — ATIS ALPHA: OVC 001 / Tops 4,500 · ¼ SM (1,800 RVR) · Wind 190/12 · Temp 15 · Alt 29.92 · THR LIM TO 2 / CLB 2 · T/O REF Flaps 20 · CG 21 · E/O Accel 1,000 · NADP 2";
@@ -1246,8 +1264,8 @@ const FSTD_LIST = [
   {faa:"722",  short:"Atlas Miami",        loc:"Atlas Air Inc. Training Center, Miami, FL",     type:"B747-400", trainer:"1",   level:"C"},
   {faa:"1092", short:"Atlas Miami",        loc:"Atlas Air Inc. Training Center, Miami, FL",     type:"B747-400", trainer:"2",   level:"D"},
   {faa:"584",  short:"Boeing Miami",       loc:"Boeing Training and Flight Services, Miami, FL", type:"B747-400", trainer:"3",   level:"D"},
-  {faa:"1091", short:"Boeing Miami",       loc:"Boeing Training and Flight Services, Miami, FL", type:"B747-400", trainer:"N/A", level:"D"},
-  {faa:"1264", short:"Boeing Miami",       loc:"Boeing Training and Flight Services, Miami, FL", type:"B747-8",   trainer:"N/A", level:"D"},
+  {faa:"1091", short:"Boeing Miami",       loc:"Boeing Training and Flight Services, Miami, FL", type:"B747-400", trainer:"4", level:"D"},
+  {faa:"1264", short:"Boeing Miami",       loc:"Boeing Training and Flight Services, Miami, FL", type:"B747-8",   trainer:"4", level:"D"},
   {faa:"267",  short:"South Coast Miami",  loc:"South Coast Simulation, Inc., Miami, FL",        type:"B747-400", trainer:"N/A", level:"D"},
   {faa:"420",  short:"South Coast Miami",  loc:"South Coast Simulation, Inc., Miami, FL",        type:"B747-400", trainer:"N/A", level:"D"},
   {faa:"1012", short:"UPS Anchorage",      loc:"United Parcel Service (UPS), Anchorage, AK",     type:"B747-400", trainer:"N/A", level:"D"}
@@ -1257,7 +1275,82 @@ function fstdById(id){ return FSTD_LIST.find(f=>f.faa===String(id)) || null; }
 function fstdLabel(f){ if(!f) return ""; return f.short+" \u00b7 "+f.type+(f.trainer!=="N/A"?(" \u00b7 SIM "+f.trainer):"")+" \u00b7 FAA "+f.faa+" (Level "+f.level+")"; }
 function fstdLong(f){ if(!f) return ""; return f.loc+" \u2014 "+f.type+(f.trainer!=="N/A"?(" SIM "+f.trainer):"")+" \u2014 FAA designation "+f.faa+", Level "+f.level; }
 function fstdOptsHTML(){ return `<option value="">Select FSTD\u2026</option>`+FSTD_LIST.map(f=>`<option value="${f.faa}"${f.faa===fstdSel?" selected":""}>${fstdLabel(f)}</option>`).join(""); }
-function setFstd(id){ fstdSel=String(id||""); const f=fstdById(fstdSel); if(typeof simDisc!=="undefined"){ simDisc.fstd = f ? fstdLabel(f) : simDisc.fstd; } if(typeof autosave==="function"){ try{ autosave(); }catch(e){} } }
+function setFstd(id){ const pv=acVariant(); fstdSel=String(id||""); const f=fstdById(fstdSel); if(typeof simDisc!=="undefined"){ simDisc.fstd = f ? fstdLabel(f) : simDisc.fstd; } if(typeof autosave==="function"){ try{ autosave(); }catch(e){} } if(acVariant()!==pv){ try{ render(); toast("Lesson guide: "+acVariantLabel()); }catch(e){} } }
+/* ---- Aircraft lesson-guide variant (v2026.10.15): ONE app for both CQMV.1 guides.
+   B747-400 FSTD (or none) -> "747 CQMV.1 Lesson Guide"; B747-8 FSTD -> "747-8 SIM 4 CQMV.1 Lesson Guide".
+   Grading, tasks and grade sheet are identical; only lesson-guide pop-up text and profile labels differ. ---- */
+function acVariant(){ const f=fstdById(fstdSel); return (f && /747-8/.test(f.type)) ? "8" : "400"; }
+function acVariantLabel(){ return acVariant()==="8" ? "B747-8 (SIM 4)" : "B747-400"; }
+function _v8str(x){ return String(x).replace(/GIANT 400 HEAVY/g,"GIANT 800 HEAVY").replace(/Giant 400 Heavy/g,"Giant 800 Heavy").replace(/GTI 400/g,"GTI 800").replace(/ZFW 200\.0/g,"ZFW 260.0").replace(/ZFW 200\b/g,"ZFW 260"); }
+function _v8deep(o,fn){ if(typeof o==="string") return fn(o); if(Array.isArray(o)) return o.map(v=>_v8deep(v,fn)); if(o&&typeof o==="object"){ const r={}; for(const k in o) r[k]=_v8deep(o[k],fn); return r; } return o; }
+/* per-node 747-8 differences (verbatim from the 747-8 SIM 4 guide): rep = text swaps, set = replace field, add = append to field */
+const LG8_OVR = {
+  MV:{
+    0:{rep:[["at V1 + 5 kts","at V1 + 5 kts (IOS: 72 Engine, N1 Seizure)"]],
+       add:{setup:["Freezes / Resets: Reset ECL (And, following each reposition, every time)"],
+            ip:["Reset Electronic Checklist (ECL) at initialization and after EVERY reposition; override to match position (Before Takeoff for departures; Approach Checklist on finals, crew performs the Landing Checklist)",
+                "Hold Short Position: SIM 4: from the Hold/Taxi options select HOLD S1 (correct side and heading). Do not use HOLD C3.",
+                "When setting winds: clear Surface Wind Turbulence Induced so only the wind is set; deselect Wind Decay & Surface Friction."]}},
+    1:{rep:[["Engine #1 Severe Damage occurs at V1 + 5 kts.","Engine #1 Severe Damage occurs at V1 + 5 kts (IOS: 72 Engine, N1 Seizure)."]]},
+    2:{set:{ip:["Crew to perform: 1-IAI (using QRC), then, 2-Engine Severe Damage NNC via ECL (note that EICAS shows ENG FAIL only; NOT the correct checklist for severe damage. Crew: QRC immediate action items, then the unannunciated Eng Svr Damage).",
+                "QRC for unannunciated IAI: see Checklist Instructions CI.NNC.2."]}},
+    7:{set:{saAfter:["MV Circuit 1 is Complete, repositioning to a 6 NM final for an Engine Inoperative Manual Landing.",
+                     "Use Simulator Reset Guide to instruct specific controls to \"Flaps 25 Landing\" position with Autobrakes 3.",
+                     "REPOSITION to a 6 NM Final for next Circuit: 28R (ILS) · 6NM Final · Gear Down, Flaps 25, Arm SPEEDBRAKE, AB 3, VREF 25 · SPD | LOC | G/S · CMD · Reset ECL; crew performs Landing Checklist."]},
+       add:{ip:["SIM 4: with the A/P off, LNAV engages at 50 ft on the engine inoperative missed approach. The LNAV course and the runway heading differ by approximately 3 degrees on this approach; consider this when grading heading on the missed approach."]}},
+    8:{set:{phase:"6 NM Final (Circuit 2 start)",
+            setup:["Circuit 2: Engine Inoperative Manual Landing — starts at 6 NM Final with landing clearance.",
+                   "Conditions remain unchanged: 28R (ILS), 6NM Final · Gear Down, Flaps 25, Arm SPEEDBRAKE, AB 3, set VREF 25 · SPD | LOC | G/S · CMD"]}},
+    10:{rep:[["Arm Malfunction: ENG FIRE (Non-Extg) at 100 KTS ENGINE #2","Arm Malfunction: ENG FIRE (Non-Extg) at 100 KTS ENGINE #2 (IOS: 26 Fire Protection, Engine Fire Non-Extinguishable, Eng 2)"],
+             ["AIRCRAFT: See \"QUICK SET SHEET\"","AIRCRAFT: See \"QUICK SET SHEET\" and Reset ECL to Before Takeoff"]]},
+    11:{set:{setup:["Circuit 3: RTO to Evacuation — starts ready for departure on Runway 10L.",
+                    "Armed Malfunction: ENG FIRE (Non-Extg) at 100 KTS ENGINE #2 (IOS: 26 Fire Protection, Engine Fire Non-Extinguishable, Eng 2)",
+                    "Reset ECL fwd to Before Takeoff",
+                    "FIRE ENG 2 Warning occurs at 100 KTS (arm crossing 100 KIAS)."]}}
+  },
+  SPOT:{
+    0:{set:{phase:"ILS 28R · 6 NM Final (setup)",
+            ip:["SPOT Circuit 2 requires both crewmembers to don the simulator oxygen mask and establish communications. SIM 4 is equipped with EROS MLD 20-726-1 masks, slightly different than those on the 747-400. These masks are NOT crew-stowable: DO NOT ATTEMPT TO STOW. After mask use, contact Boeing maintenance for cleaning and stowage."]},
+       rep:[["Position: KSFO 28R 5-8 NM Final (8NM preferred, select per IOS options)","Position: KSFO Runway 28R 6 NM Final"],
+            ["Visibility RVR 600/600/600","Visibility RVR 600/600/600 (IOS entry: 0.13 SM, or RVR 0600)"]]},
+    1:{rep:[["Circuit 1 starts at 5-8 NM Final","Circuit 1 starts at 6 NM Final"]]},
+    2:{rep:[["N37.45.00/W124.45.00","N37:45.0/W124:45.0"],["SPD | LNAV | VNAV PTH CMD","SPD | LNAV | VNAV PTH CMD · Reset ECL"]]},
+    3:{set:{setup:["Circuit 2 starts in cruise at FL250, approximately 110 NM west of KSFO, maintain position freeze.",
+                   "Position freeze remains ON for this circuit (Release Flight Freeze once aircraft is configured)",
+                   "After aircraft stabilizes at cruise with automation ON — AIRCRAFT: Select a CABIN ALTITUDE warning (IOS: 21P Air Systems Pressurization > Rapid Depressurization > Cargo Door Fails) during the descent.",
+                   "POSITION: Position freeze ON (N37:45.0/W124:45.0), remains on until next circuit"]}},
+    5:{set:{setup:["Circuit Complete. Reposition for next Circuit — POSITION: Reset altitude to FL250 (IOS Aircraft Slew page) · Same Lat/Long held (N37:45.0/W124:45.0) · HDG 080, 300 KTS · Once stabilized, POSITION FREEZE OFF; set Visibility 50 SM; Reset ECL",
+                   "AIRCRAFT: CDU set cruise FL250, DIRECT KSFO · SPD | LNAV | VNAV PTH CMD · Set up RNAV RWY 10L (ILUDY)"],
+            ip:["The 747-8 uses EROS MLD 20-726-1 masks, which are NOT crew-stowable. DO NOT ATTEMPT TO STOW. After mask use, contact Boeing maintenance for cleaning and stowage."]}},
+    6:{rep:[["Select FIRE MAIN DECK (if not selectable, advise crew verbally of fire)","Select FIRE MAIN DECK (IOS: 26 Fire, Main Deck Cargo Fire, Forward)"],[" (RNAV RWY 10L)",""]],
+       set:{ip:["If the crew asks to check the main deck door, respond that it has been checked and there is visible smoke, fire, and fumes."]}},
+    9:{rep:[["Arm Malfunction: ENG FAIL (Flame Out) ENGINE 1 or 4 at 20 KTS Ground Speed","Arm: 72 Engine, Flame Out No Fuel Flow, ENGINE 1 or 4 at 20 KTS Ground Speed"],
+            ["AIRCRAFT: See \"QUICK SET SHEET\"","AIRCRAFT: See \"QUICK SET SHEET\" and Reset ECL to Before Takeoff"]]},
+    10:{rep:[["ARM Engine Fail or Flame Out (ENGINE 1 or 4) at 20 KTS GS","ARM IOS: 72 Engine, Flame Out No Fuel Flow (ENGINE 1 or 4) at 20 KTS GS"],["10L ready for Takeoff","10L ready for Takeoff; Reset ECL"]]}
+  }
+};
+const PROF8_OVR = { MV:{8:{lbl:"6 NM Final"}}, SPOT:{0:{lbl:"ILS 28R 6 NM final"}, 3:{sub:"N37:45.0 / W124:45.0"}} };
+const _lgCache = {};
+function lgFor(ex){
+  const base = (ex==="SPOT") ? SPOT_LG : MV_LG;
+  if(acVariant()!=="8") return base;
+  if(_lgCache[ex]) return _lgCache[ex];
+  const out = _v8deep(base, _v8str), ov = LG8_OVR[ex]||{};
+  Object.keys(ov).forEach(i=>{
+    const o=ov[i]; let n=out[i]; if(!n) return;
+    if(o.rep) n=_v8deep(n, x=>{ let y=x; o.rep.forEach(([a,b])=>{ y=y.split(a).join(b); }); return y; });
+    if(o.set) n=Object.assign({}, n, o.set);
+    if(o.add) Object.keys(o.add).forEach(f=>{ n[f]=(n[f]||[]).concat(o.add[f]); });
+    out[i]=n;
+  });
+  return (_lgCache[ex]=out);
+}
+function profFor(ex){
+  const base = (ex==="SPOT") ? SPOT_PROFILE : MV_PROFILE;
+  if(acVariant()!=="8") return base;
+  const ov = PROF8_OVR[ex]||{};
+  return { axis:base.axis, nodes:base.nodes.map((n,i)=> ov[i] ? Object.assign({}, n, ov[i]) : n) };
+}
 function _sdTime(){ const d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
 function _sdEsc(t){ return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function updateSimDiscBtn(){
@@ -1583,6 +1676,9 @@ function dutyAvailable(run, evCode, roleFull, ex){
   // Seat Support person: never graded on anything in their seat
   if(seatPerson === "Seat Support") return false;
   if(DUTY_EVENTS.has(evCode)){
+    // SPOT Circuit 4 RTO (Crew Task, Rev 2026.10.15 grade sheet): in a CA/CA pairing each CA
+    // "will receive PM ratings when occupying the right seat" -> PM cells graded on both runs too.
+    if(evCode==="2.5.1" && (ex||EX)==="SPOT" && pairing()==="CACA" && isPM && seatPerson==="CA") return true;
     // Duty events follow RANK: CA graded PF-only, FO graded PM-only.
     // The person in this seat this run must hold the matching rank.
     if(!isPM && seatPerson !== "CA") return false;   // PF duty cell needs a CA here
@@ -1641,7 +1737,7 @@ function buildSheet(ex){
       <label>Date <input type="date" data-field="date" value="${sessionDate}"></label>
       <label>I/E <input type="text" data-instr="name" value="${instructor.name.replace(/"/g,'&quot;')}"></label>
       <label>Emp <input type="text" size="6" data-instr="emp" value="${instructor.emp.replace(/"/g,'&quot;')}"></label>
-      <label>FSTD <select class="dutysel" data-fstd>${fstdOptsHTML()}</select></label>
+      <label>FSTD <select class="dutysel" data-fstd>${fstdOptsHTML()}</select></label><span style="align-self:center;font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;background:${acVariant()==="8"?"#1f4e8c":"#e8edf3"};color:${acVariant()==="8"?"#fff":"#1f2d3d"}" title="The lesson-guide pop-ups follow the FSTD selected">Lesson guide: ${acVariantLabel()}</span>
     </div>
     <div class="crewwrap">
     ${crewRowHTML(leadFor(ex),"PF 1st",ex)}
@@ -1799,7 +1895,7 @@ function buildJustifications(wrap, ex, events){
 }
 /* ---- build the flight profile SVG ---- */
 function nodeDutyCode(ex, idx){
-  const LG = ex==="MV"?MV_LG:SPOT_LG;
+  const LG = lgFor(ex);
   const codes = ((LG[idx]&&LG[idx].codes)||"").split(/[ ,\/]+/).filter(Boolean);
   return codes.find(c=>DUTY_EVENTS.has(c)) || null;
 }
@@ -1812,7 +1908,7 @@ function nodeNotRequired(ex, idx){
   return roles.length>0 && roles.every(r=> !dutyAvailable(RUN, code, r));
 }
 function buildProfile(ex){
-  const P = ex==="MV"?MV_PROFILE:SPOT_PROFILE;
+  const P = profFor(ex);
   const clickable = (ex==="MV" || ex==="SPOT");   // both link to the lesson guide
   const VW=960, VH=290;                 // viewBox
   const padL=54, padR=24, padT=58, padB=40;
@@ -2079,7 +2175,7 @@ function closeLessonGuide(){
 function lgKey(e){
   if(e.key==="Escape"){ closeLessonGuide(); return; }
   if(!lgOpen) return;
-  const P = (lgOpen.ex==="SPOT"?SPOT_PROFILE:MV_PROFILE);
+  const P = profFor(lgOpen.ex);
   if(e.key==="ArrowRight" && lgOpen.idx < P.nodes.length-1) openLessonGuide(lgOpen.ex, lgOpen.idx+1);
   else if(e.key==="ArrowLeft" && lgOpen.idx > 0) openLessonGuide(lgOpen.ex, lgOpen.idx-1);
 }
@@ -2200,8 +2296,8 @@ function perfRefHTML(code){
 }
 function openLessonGuide(ex, idx){
   try{ markNode(ex, idx); }catch(e){}
-  const LG   = (ex==="SPOT" ? SPOT_LG : MV_LG);
-  const PROF = (ex==="SPOT" ? SPOT_PROFILE : MV_PROFILE);
+  const LG   = lgFor(ex);
+  const PROF = profFor(ex);
   const data = LG[idx];
   const node = PROF.nodes[idx];
   closeLessonGuide();
@@ -2218,6 +2314,7 @@ function openLessonGuide(ex, idx){
   if(codes && codes!=="—") head += `<span class="lg-chip">Task ${esc(codes)}</span>`;
   if(circuit) head += `<span class="lg-chip">${esc(circuit)}</span>`;
   if(page) head += `<span>${esc(page)}</span>`;
+  head += `<span class="lg-chip">${esc(acVariantLabel())} guide</span>`;
   head += `</div></div><button type="button" class="lg-x" aria-label="Close">✕</button></div>`;
   // body
   let body = `<div class="lg-body">`;
@@ -2535,7 +2632,7 @@ function openGradePicker(box, k, ex, ev, role, run, sheet){
 
 /* ---- current position: profile point <-> active grade column (two-way) ---- */
 let curNodes={}, hotCols={}, hotNote={};
-function _lgFor(ex){ if(ex==="MT" && typeof MT_LG!=="undefined") return MT_LG; if(ex==="SPOT" && typeof SPOT_LG!=="undefined") return SPOT_LG; return (typeof MV_LG!=="undefined")?MV_LG:{}; }
+function _lgFor(ex){ if(ex==="MT" && typeof MT_LG!=="undefined") return MT_LG; if(ex==="SPOT" || ex==="MV") return lgFor(ex); return (typeof MV_LG!=="undefined")?lgFor("MV"):{}; }
 function _evsFor(ex){ if(ex==="MT" && typeof MT_EVENTS!=="undefined") return MT_EVENTS; if(ex==="SPOT" && typeof SPOT_EVENTS!=="undefined") return SPOT_EVENTS; return (typeof MV_EVENTS!=="undefined")?MV_EVENTS:[]; }
 function _nodeCodes(ex,idx){ const d=_lgFor(ex)[idx]; if(!d||!d.codes) return []; return String(d.codes).split(/[\s\/,]+/).filter(c=>/^\d/.test(c)); }
 function _nodesForCode(ex,code){ const L=_lgFor(ex), out=[]; Object.keys(L).forEach(k=>{ if(_nodeCodes(ex,+k).indexOf(code)>=0) out.push(+k); }); return out; }
@@ -2739,7 +2836,7 @@ function aimsTable(ex,events,side,person,run){
   // AIMS entry order per exercise
   const order = ex==="MV"
     ? ["2.3","2.5.1","4.1.2","6.8.3","6.8.4","6.9.3","7.3.1","7.3.2","10.1"]
-    : ["6.7","7.2","10.2.1","10.3.1"];
+    : ["6.7","7.2","10.2.1","10.3.1","2.5.1"];
   order.forEach(code=>{
     const ev=events.find(e=>e.code===code);
     const tr=document.createElement("tr");
@@ -2806,6 +2903,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.10.15",date:"2026-10-16",notes:["Updated to CQMV.1 Rev 2026.10.15 (747 Lesson Guide and 747-8 SIM 4 Lesson Guide).","New SPOT Circuit 4: RTO (Crew Task) — engine fail at ~20 kts GS, the FO (or CA in the right seat) starts the takeoff as PF and the CA takes control for the reject. New profile point, lesson-guide pop-up and a 2.5.1 column at the end of the SPOT grade sheet. Graded per the new grade sheet: CA as PF / FO as PM; CA/FO once (first half only); CA/CA both halves, and the right-seat CA also receives PM ratings; FO/FO both halves with PF N/A. Placed last in the SPOT AIMS entry order (not yet on the AIMS form), and in the PDF and email.","One app for both aircraft: the lesson guide now follows the FSTD you select. Pick the B747-8 FFS and the pop-ups switch to the 747-8 SIM 4 guide — GIANT 800 / GTI 800, ZFW 260.0, 6 NM finals, Reset ECL steps, SIM 4 IOS menu paths, HOLD S1, EROS masks (not crew-stowable) and the LNAV missed-approach note. Any other FSTD (or none selected) shows the 747-400 guide. The guide in use shows next to the FSTD box and in every pop-up header. Grading is identical on both.","MV Circuit 2 pre-set now reads ‘Clear Malfunction: ENG SEVERE DAMAGE’; SPOT Circuit 2 reset adds Visibility 50 SM and Set up RNAV RWY 10L (ILUDY), per the new guide.","FSTD list: Boeing Miami FAA 1091 (747-400 configuration) and FAA 1264 (747-8 configuration) now show as SIM 4 \u2014 one simulator, configured as a -400 or a -8 for the day."]},
  {v:"2026.10.14",date:"2026-10-14",notes:["Duty fix (CA/CA and FO/FO): a Duty pick on the iPad now always takes on the first try. The app re-reads the Duty boxes before every redraw and on every tap, and the retired crew-list lookup can no longer change a pilot's duty when an Emp number is entered."]},
  {v:"2026.10.13",date:"2026-10-05",notes:["Position tracking: tapping a point on the profile now lights that point green and highlights its grade column(s) below; tapping a grade column header lights the matching point(s) on the profile. Both stay lit after closing the pop-up and after switching runs, so you can see where you are in the profile at a glance."]},
  {v:"2026.10.11",date:"2026-10-05",notes:["FSTD list: added the Atlas Air Training Center Miami simulators — SIM 1 (FAA 722, Level C) and SIM 2 (FAA 1092, Level D) — from AQP Application Table B.1.6."]},
@@ -3034,7 +3132,7 @@ function makePdf(){
   });
   // ---- AIMS entry order tables (per student, PF then PM) ----
   (function(){
-    const AIMS_ORDER = { MV:["2.3","2.5.1","4.1.2","6.8.3","6.8.4","6.9.3","7.3.1","7.3.2","10.1"], SPOT:["6.7","7.2","10.2.1","10.3.1"] };
+    const AIMS_ORDER = { MV:["2.3","2.5.1","4.1.2","6.8.3","6.8.4","6.9.3","7.3.1","7.3.2","10.1"], SPOT:["6.7","7.2","10.2.1","10.3.1","2.5.1"] };
     const evByCode=(events,c)=>events.find(e=>e.code===c);
     doc.addPage(); y=M;
     doc.setFontSize(13); doc.setFont(undefined,"bold"); doc.setTextColor(30,58,95);
@@ -3306,7 +3404,7 @@ function renderFinals(wrap, ex){
     host.appendChild(grp);
   });
 }
-const HELP = {"title": "How to Use the AQP Run-and-Grade Instruments", "subtitle": "Instructor guide for the CQMV.1 (MV + SPOT) and CQMT1.1 (MT) HTML Run-and-Grade tools. Tap any topic below, or tap a ? next to a feature in the tool to jump straight to it.", "version": "2026.07", "topics": [{"id": "overview", "title": "What the tool is", "intro": "The Run-and-Grade tool is a single web page (one file) that runs on your iPad, fully offline. It gives you a visual timeline to run the event, a grading grid tied to the qualification standards, automatic seat-position and final-grade logic, and a Save-as-PDF record.", "notes": ["It is a controlled document — the version is shown at the top right. Use only the copy issued to you.", "Nothing you enter is sent anywhere; it stays on your device. The tool prepares your AIMS entry — it does not replace AIMS."]}, {"id": "start", "title": "Opening and running it on your iPad", "intro": "The tool opens like a web page and works with no signal.", "steps": ["Open the file in your reader. It loads as a page you interact with by tapping.", "Everything works offline — you do not need a connection.", "To start a new crew, use the New button in the toolbar.", "Keep your finished record with Save as PDF (see ‘Saving’)."], "notes": ["If the page ever looks stuck, reload it — your saved sessions are kept on the device."]}, {"id": "runs", "title": "Run 1 and Run 2 — why two runs", "intro": "Each crewmember must be graded as both Pilot Flying (PF) and Pilot Monitoring (PM). That is why the event is flown twice.", "steps": ["Run 1: PF 1st flies PF; PF 2nd is the PM.", "Run 2: the duties swap — PF 2nd flies PF; PF 1st is the PM.", "Switch runs with the RUN 1 / RUN 2 buttons at the top.", "Duty-specific items (for example the Rejected Takeoff) are flown once — graded on the run where the Captain is PF, and automatically N/A on the other run."]}, {"id": "crew", "title": "Entering the crew", "intro": "Fill in the crew before you grade. The tool uses the duty you set to apply the correct seat and N/A rules.", "steps": ["Pick the Date — it opens a calendar and defaults to today; tap to change it.", "For each pilot enter Name and Employee number.", "Set each pilot’s Duty: CA, FO, or Seat Support.", "Use the ⇅ Swap button (to the right of the crew rows) to trade PF 1st and PF 2nd for the exercise you are on. MV and SPOT swap independently, so you can swap SPOT without changing an MV you already graded. This is mainly for a CA/CA or FO/FO pairing. You confirm first, so it can’t happen by accident."], "notes": ["Names and duty carry across both runs and the AIMS page.", "Swapping only changes who is PF 1st vs PF 2nd. Any grades already entered stay on their run/seat slot — they are never moved."]}, {"id": "instructor", "title": "Instructor and Attempt status", "intro": "Record who ran the event and each crewmember's AIMS Module Attempt Status, so every record and email ties back to you.", "steps": ["Enter the I/E name and employee number on the top row — it prints on the record and on the notification emails.", "Each crewmember has their own Attempt selection, next to their duty, matching the AIMS ‘Module Attempt Status’ list: Initial Attempt, Remedial Attempt 1–4, Repeat Attempt 1–4. It defaults to Initial Attempt; change it only for a returning student.", "Remedial and Repeat attempts are uncommon, and typically only the returning student is on one — select the same status you will enter in AIMS."]}, {"id": "seat", "title": "Seat position (Left / Right)", "intro": "The FAA records seat position. The tool sets it automatically from the pairing and shows it on the blue Seats line, on the AIMS page, and in the PDF.", "steps": ["CA is graded in the Left Seat; FO in the Right Seat.", "CA/FO pairing: seats stay fixed for both runs — only the PF/PM duty swaps.", "CA/CA pairing: the pilots swap seats between runs so each captain is graded PF from the Left Seat.", "FO/FO pairing: the mirror — each FO is graded PF from the Right Seat.", "Seat Support fills the missing seat (standing in for the FO sits Right; standing in for the CA sits Left)."]}, {"id": "profile", "title": "The flight profile and lesson guide", "intro": "The stick diagram is a left-to-right timeline of the event so you can run it while watching the crew.", "steps": ["Each point on the line is a maneuver; the red points are the critical events.", "Tap any point to open its lesson guide — the ATC/company calls to read, the graded task, and the IP notes for that step.", "Use the Prev / Next buttons in the pop-up to move step to step.", "The pop-up reproduces the FAA-approved lesson guide for that step — the situational-awareness context, the procedure steps, the verbatim ATC/company calls, and the IP notes.", "For a graded point, the pop-up also has a ‘Grade this task’ panel: tap a grade there to set Handling, SOP, Automation, and CRM without leaving the guide. The grade picker opens on top and the change updates the grid instantly."]}, {"id": "charts", "title": "Approach and airport charts", "intro": "The charts you need are built into the tool.", "steps": ["Tap a chart pill at the top of the profile (for example ILS 25L) to open it.", "Pinch or scroll to zoom, drag to pan, double-tap to fit, and Close or Esc to exit.", "Some profile points also offer the relevant chart inside their lesson-guide pop-up."]}, {"id": "timer", "title": "The run timer", "intro": "Use the timer to keep the event within its planned time.", "steps": ["Start begins the clock; Pause holds it; Reset returns it to zero.", "Each run and exercise keeps its own timer."]}, {"id": "grading", "title": "Grading a task", "intro": "Every task is a column. The grade rows are Handling, SOP, Automation, and CRM for the PF, and SOP and CRM for the PM. Every box starts at 4 (the AIMS default).", "steps": ["Tap a box to open the grade picker.", "Choose a grade on the AQP 5–1 scale: 5, 4, 3, 2, or 1, with RP (retrained-pass) / RF (retrained-fail) variants. Every graded box that applies takes a real grade — there is no N/A on an individual box. If a whole task couldn't be flown, N/A the entire column from its header (see ‘N/A cells’).", "A grade of 3 or lower opens a justification (see ‘Below-standard justification’).", "The box turns red when it is below standard."], "notes": ["Tap an event header to highlight that whole column while you grade it.", "You can also grade straight from a lesson-guide pop-up: open a maneuver point and use its ‘Grade this task’ panel — the change syncs to this grid."]}, {"id": "justify", "title": "Below-standard justification", "intro": "A grade of 3 or lower must be explained — the same discipline the IE AQP Manual requires (a comment must be entered).", "steps": ["When you pick 3 or lower, the picker shows the qualification standards for that task.", "Check the standard(s) the crew missed, and add a note if needed.", "Your justifications collect in the panel under the grid and print in the PDF."]}, {"id": "na", "title": "N/A cells (why some are grayed)", "intro": "Some boxes are grayed as N/A because the standard says that item does not apply. You cannot grade a standards-N/A cell — this enforces the standard for you.", "steps": ["PM is graded only on SOP and CRM — Handling and Automation are N/A for the PM.", "Automation is N/A where the task has no automation element.", "Duty-specific items (for example the RTO) are graded once, on the run where the Captain is PF, and N/A on the other run.", "A Seat Support pilot’s cells are N/A in AIMS but can carry an internal note (see ‘Seat Support notes’).", "To N/A a whole maneuver that could not be completed: tap its column header once to highlight it, then tap the header again — a box lets you mark the entire column N/A for the current run and pick a reason (Sim malfunction, Illness, or Could not complete in allotted time)."]}, {"id": "seatsupport", "title": "Seat Support internal notes", "intro": "A Seat Support pilot flies the seat but is not graded in AIMS — the manual assigns no performance ratings to Crewmember 2. Their cells stay N/A. You can still record how they did, for internal debrief and the calibration program.", "steps": ["When a pilot is set to Seat Support, their cells turn amber-N/A and become tappable.", "Tap a cell to open a Seat Support note: check the qualification standard(s) missed and add a comment.", "These notes appear in the ‘Seat Support — Internal Notes’ panel and a matching PDF section, clearly marked not AIMS / not an FAA record."], "notes": ["This data is internal only — for the Seat Support debrief and to spot a recurring below-standard Seat Support for the calibration program."]}, {"id": "final", "title": "The final grade and Incomplete reasons", "intro": "The tool computes each crewmember’s final event grade from the item grades using the AIMS-to-TVER table, and lets you record why an event was not completed.", "steps": ["MV (Maneuvers Validation): Satisfactory, or Unsatisfactory if any required item is 2, 2-RF, 1, 1-RF, or a required N/A.", "MT (Maneuvers Training) and SPOT: Complete, or Incomplete on the same conditions.", "A grade of 3 still needs its comment but does not fail the event.", "Each crewmember has three pick-one reason buttons next to their grade: Sim malfunction, Illness, and Unable to complete in time. Selecting Sim malfunction or Illness sets the event Incomplete on its own.", "If a required item is N/A and you have not picked Sim malfunction or Illness, the reason defaults automatically to ‘Unable to complete in allotted time’ — its button shows a dashed outline to signal the automatic choice."], "notes": ["The final grade and its reason show on the run sheet, on each AIMS student, in the PDF, and in the repeat-event email.", "You can also N/A a whole maneuver with a reason by double-tapping its column header (see ‘N/A cells’)."]}, {"id": "emails", "title": "Repeat-event emails (Incomplete / Unsatisfactory)", "intro": "When a crewmember ends Unsatisfactory or Incomplete, the tool writes the notification emails for you, and a red button flags that one is required.", "steps": ["The ‘Email notification’ button turns red and pulses when an email is required.", "Tap it to see the draft: one email to the three offices (Training Records, 747 Fleet Captain, Training Scheduling) with the student, seat, instructor, attempt status, the items to redo, and — at the bottom — the note for the instructor who completes the student.", "Start a new email to the three addresses shown. Tap ‘Copy subject’ and paste it into the subject line, then tap ‘Copy email body’ and paste it as the message. Only the text is copied, so the addresses don’t turn into a link.", "The same draft also prints in the Save-as-PDF, so you can copy it from the PDF instead."], "notes": ["The items listed are those graded 2, 2-RF, 1, 1-RF, or a required N/A — on a repeat the student only redoes these.", "Each item shows its grade, the exact qualification standard(s) missed, and your comment — so the next instructor knows precisely what to work on, and that is what goes into AIMS.", "The next-instructor section tells them to grade only those items in AIMS and grade all other items N/A, and carries a NOTICE that Training Records requires the next instructor be notified before the start of the event."]}, {"id": "aims", "title": "The AIMS page and entry order", "intro": "AIMS wants grades in a fixed order that differs from the flown order. The AIMS tab and the PDF give you that order so you don’t re-sequence by hand.", "steps": ["Open the AIMS tab to see each student’s PF and PM grades in AIMS entry order, with their seat.", "Grades mirror the run sheets — enter them top-to-bottom.", "The Save-as-PDF includes both the flown order (for debrief) and the AIMS Entry Order (for keying into AIMS)."]}, {"id": "save", "title": "Saving: sessions, New, and Save-as-PDF", "intro": "Keep your record and reset for the next crew from the toolbar.", "steps": ["Save stores the current crew’s sheet on this iPad (name it when prompted).", "Saved sessions lists them to reload or delete.", "New clears everything for the next crew — nothing is saved automatically.", "Save as PDF builds the record: crew, both runs, justifications, seat, final grades, Seat Support notes, the AIMS Entry Order, and — for any Incomplete/Unsatisfactory — the repeat-event notification emails."], "notes": ["Saved sessions live only on this iPad and are not a permanent record — the PDF is your durable copy."]}, {"id": "version", "title": "Version, updates, and revision history", "intro": "The version and date appear at the top, next to two links: ‘Check for updates’ and ‘Revisions’.", "steps": ["Tap ‘↻ Check for updates’ to refresh to the newest version without closing the tool — your work in progress is kept.", "Check for updates at least once a day: it is the only way to be sure you are on the latest version.", "Tap ‘Revisions’ to see the dated list of what changed in each version.", "The version and date in the badge confirm which controlled copy you are on."]}]};
+const HELP = {"title": "How to Use the AQP Run-and-Grade Instruments", "subtitle": "Instructor guide for the CQMV.1 (MV + SPOT) and CQMT1.1 (MT) HTML Run-and-Grade tools. Tap any topic below, or tap a ? next to a feature in the tool to jump straight to it.", "version": "2026.07", "topics": [{"id": "overview", "title": "What the tool is", "intro": "The Run-and-Grade tool is a single web page (one file) that runs on your iPad, fully offline. It gives you a visual timeline to run the event, a grading grid tied to the qualification standards, automatic seat-position and final-grade logic, and a Save-as-PDF record.", "notes": ["It is a controlled document — the version is shown at the top right. Use only the copy issued to you.", "Nothing you enter is sent anywhere; it stays on your device. The tool prepares your AIMS entry — it does not replace AIMS."]}, {"id": "start", "title": "Opening and running it on your iPad", "intro": "The tool opens like a web page and works with no signal.", "steps": ["Open the file in your reader. It loads as a page you interact with by tapping.", "Everything works offline — you do not need a connection.", "To start a new crew, use the New button in the toolbar.", "Keep your finished record with Save as PDF (see ‘Saving’)."], "notes": ["If the page ever looks stuck, reload it — your saved sessions are kept on the device."]}, {"id": "runs", "title": "Run 1 and Run 2 — why two runs", "intro": "Each crewmember must be graded as both Pilot Flying (PF) and Pilot Monitoring (PM). That is why the event is flown twice.", "steps": ["Run 1: PF 1st flies PF; PF 2nd is the PM.", "Run 2: the duties swap — PF 2nd flies PF; PF 1st is the PM.", "Switch runs with the RUN 1 / RUN 2 buttons at the top.", "Duty-specific items (for example the Rejected Takeoff) are flown once — graded on the run where the Captain is PF, and automatically N/A on the other run."]}, {"id": "crew", "title": "Entering the crew", "intro": "Fill in the crew before you grade. The tool uses the duty you set to apply the correct seat and N/A rules.", "steps": ["Pick the Date — it opens a calendar and defaults to today; tap to change it.", "For each pilot enter Name and Employee number.", "Set each pilot’s Duty: CA, FO, or Seat Support.", "Use the ⇅ Swap button (to the right of the crew rows) to trade PF 1st and PF 2nd for the exercise you are on. MV and SPOT swap independently, so you can swap SPOT without changing an MV you already graded. This is mainly for a CA/CA or FO/FO pairing. You confirm first, so it can’t happen by accident."], "notes": ["Names and duty carry across both runs and the AIMS page.", "Swapping only changes who is PF 1st vs PF 2nd. Any grades already entered stay on their run/seat slot — they are never moved."]}, {"id": "instructor", "title": "Instructor and Attempt status", "intro": "Record who ran the event and each crewmember's AIMS Module Attempt Status, so every record and email ties back to you.", "steps": ["Enter the I/E name and employee number on the top row — it prints on the record and on the notification emails.", "Each crewmember has their own Attempt selection, next to their duty, matching the AIMS ‘Module Attempt Status’ list: Initial Attempt, Remedial Attempt 1–4, Repeat Attempt 1–4. It defaults to Initial Attempt; change it only for a returning student.", "Remedial and Repeat attempts are uncommon, and typically only the returning student is on one — select the same status you will enter in AIMS."]}, {"id": "seat", "title": "Seat position (Left / Right)", "intro": "The FAA records seat position. The tool sets it automatically from the pairing and shows it on the blue Seats line, on the AIMS page, and in the PDF.", "steps": ["CA is graded in the Left Seat; FO in the Right Seat.", "CA/FO pairing: seats stay fixed for both runs — only the PF/PM duty swaps.", "CA/CA pairing: the pilots swap seats between runs so each captain is graded PF from the Left Seat.", "FO/FO pairing: the mirror — each FO is graded PF from the Right Seat.", "Seat Support fills the missing seat (standing in for the FO sits Right; standing in for the CA sits Left)."]}, {"id": "profile", "title": "The flight profile and lesson guide", "intro": "The stick diagram is a left-to-right timeline of the event so you can run it while watching the crew.", "steps": ["Each point on the line is a maneuver; the red points are the critical events.", "Tap any point to open its lesson guide — the ATC/company calls to read, the graded task, and the IP notes for that step.", "Use the Prev / Next buttons in the pop-up to move step to step.", "The pop-up reproduces the FAA-approved lesson guide for that step — the situational-awareness context, the procedure steps, the verbatim ATC/company calls, and the IP notes.", "For a graded point, the pop-up also has a ‘Grade this task’ panel: tap a grade there to set Handling, SOP, Automation, and CRM without leaving the guide. The grade picker opens on top and the change updates the grid instantly."]}, {"id": "charts", "title": "Approach and airport charts", "intro": "The charts you need are built into the tool.", "steps": ["Tap a chart pill at the top of the profile (for example ILS 25L) to open it.", "Pinch or scroll to zoom, drag to pan, double-tap to fit, and Close or Esc to exit.", "Some profile points also offer the relevant chart inside their lesson-guide pop-up."]}, {"id": "timer", "title": "The run timer", "intro": "Use the timer to keep the event within its planned time.", "steps": ["Start begins the clock; Pause holds it; Reset returns it to zero.", "Each run and exercise keeps its own timer."]}, {"id": "grading", "title": "Grading a task", "intro": "Every task is a column. The grade rows are Handling, SOP, Automation, and CRM for the PF, and SOP and CRM for the PM. Every box starts at 4 (the AIMS default).", "steps": ["Tap a box to open the grade picker.", "Choose a grade on the AQP 5–1 scale: 5, 4, 3, 2, or 1, with RP (retrained-pass) / RF (retrained-fail) variants. Every graded box that applies takes a real grade — there is no N/A on an individual box. If a whole task couldn't be flown, N/A the entire column from its header (see ‘N/A cells’).", "A grade of 3 or lower opens a justification (see ‘Below-standard justification’).", "The box turns red when it is below standard."], "notes": ["Tap an event header to highlight that whole column while you grade it.", "You can also grade straight from a lesson-guide pop-up: open a maneuver point and use its ‘Grade this task’ panel — the change syncs to this grid."]}, {"id": "justify", "title": "Below-standard justification", "intro": "A grade of 3 or lower must be explained — the same discipline the IE AQP Manual requires (a comment must be entered).", "steps": ["When you pick 3 or lower, the picker shows the qualification standards for that task.", "Check the standard(s) the crew missed, and add a note if needed.", "Your justifications collect in the panel under the grid and print in the PDF."]}, {"id": "na", "title": "N/A cells (why some are grayed)", "intro": "Some boxes are grayed as N/A because the standard says that item does not apply. You cannot grade a standards-N/A cell — this enforces the standard for you.", "steps": ["PM is graded only on SOP and CRM — Handling and Automation are N/A for the PM.", "Automation is N/A where the task has no automation element.", "Duty-specific items (for example the RTO) are graded once, on the run where the Captain is PF, and N/A on the other run.", "SPOT Circuit 4 RTO (crew task): the FO (or the CA in the right seat) starts the takeoff as PF and the CA takes control for the reject — the CA is graded PF and the FO PM. CA/CA: flown in both halves and the right-seat CA also receives PM ratings. FO/FO: both halves, PF N/A.", "A Seat Support pilot’s cells are N/A in AIMS but can carry an internal note (see ‘Seat Support notes’).", "To N/A a whole maneuver that could not be completed: tap its column header once to highlight it, then tap the header again — a box lets you mark the entire column N/A for the current run and pick a reason (Sim malfunction, Illness, or Could not complete in allotted time)."]}, {"id": "seatsupport", "title": "Seat Support internal notes", "intro": "A Seat Support pilot flies the seat but is not graded in AIMS — the manual assigns no performance ratings to Crewmember 2. Their cells stay N/A. You can still record how they did, for internal debrief and the calibration program.", "steps": ["When a pilot is set to Seat Support, their cells turn amber-N/A and become tappable.", "Tap a cell to open a Seat Support note: check the qualification standard(s) missed and add a comment.", "These notes appear in the ‘Seat Support — Internal Notes’ panel and a matching PDF section, clearly marked not AIMS / not an FAA record."], "notes": ["This data is internal only — for the Seat Support debrief and to spot a recurring below-standard Seat Support for the calibration program."]}, {"id": "final", "title": "The final grade and Incomplete reasons", "intro": "The tool computes each crewmember’s final event grade from the item grades using the AIMS-to-TVER table, and lets you record why an event was not completed.", "steps": ["MV (Maneuvers Validation): Satisfactory, or Unsatisfactory if any required item is 2, 2-RF, 1, 1-RF, or a required N/A.", "MT (Maneuvers Training) and SPOT: Complete, or Incomplete on the same conditions.", "A grade of 3 still needs its comment but does not fail the event.", "Each crewmember has three pick-one reason buttons next to their grade: Sim malfunction, Illness, and Unable to complete in time. Selecting Sim malfunction or Illness sets the event Incomplete on its own.", "If a required item is N/A and you have not picked Sim malfunction or Illness, the reason defaults automatically to ‘Unable to complete in allotted time’ — its button shows a dashed outline to signal the automatic choice."], "notes": ["The final grade and its reason show on the run sheet, on each AIMS student, in the PDF, and in the repeat-event email.", "You can also N/A a whole maneuver with a reason by double-tapping its column header (see ‘N/A cells’)."]}, {"id": "emails", "title": "Repeat-event emails (Incomplete / Unsatisfactory)", "intro": "When a crewmember ends Unsatisfactory or Incomplete, the tool writes the notification emails for you, and a red button flags that one is required.", "steps": ["The ‘Email notification’ button turns red and pulses when an email is required.", "Tap it to see the draft: one email to the three offices (Training Records, 747 Fleet Captain, Training Scheduling) with the student, seat, instructor, attempt status, the items to redo, and — at the bottom — the note for the instructor who completes the student.", "Start a new email to the three addresses shown. Tap ‘Copy subject’ and paste it into the subject line, then tap ‘Copy email body’ and paste it as the message. Only the text is copied, so the addresses don’t turn into a link.", "The same draft also prints in the Save-as-PDF, so you can copy it from the PDF instead."], "notes": ["The items listed are those graded 2, 2-RF, 1, 1-RF, or a required N/A — on a repeat the student only redoes these.", "Each item shows its grade, the exact qualification standard(s) missed, and your comment — so the next instructor knows precisely what to work on, and that is what goes into AIMS.", "The next-instructor section tells them to grade only those items in AIMS and grade all other items N/A, and carries a NOTICE that Training Records requires the next instructor be notified before the start of the event."]}, {"id": "aims", "title": "The AIMS page and entry order", "intro": "AIMS wants grades in a fixed order that differs from the flown order. The AIMS tab and the PDF give you that order so you don’t re-sequence by hand.", "steps": ["Open the AIMS tab to see each student’s PF and PM grades in AIMS entry order, with their seat.", "Grades mirror the run sheets — enter them top-to-bottom.", "The Save-as-PDF includes both the flown order (for debrief) and the AIMS Entry Order (for keying into AIMS)."]}, {"id": "save", "title": "Saving: sessions, New, and Save-as-PDF", "intro": "Keep your record and reset for the next crew from the toolbar.", "steps": ["Save stores the current crew’s sheet on this iPad (name it when prompted).", "Saved sessions lists them to reload or delete.", "New clears everything for the next crew — nothing is saved automatically.", "Save as PDF builds the record: crew, both runs, justifications, seat, final grades, Seat Support notes, the AIMS Entry Order, and — for any Incomplete/Unsatisfactory — the repeat-event notification emails."], "notes": ["Saved sessions live only on this iPad and are not a permanent record — the PDF is your durable copy."]}, {"id": "version", "title": "Version, updates, and revision history", "intro": "The version and date appear at the top, next to two links: ‘Check for updates’ and ‘Revisions’.", "steps": ["Tap ‘↻ Check for updates’ to refresh to the newest version without closing the tool — your work in progress is kept.", "Check for updates at least once a day: it is the only way to be sure you are on the latest version.", "Tap ‘Revisions’ to see the dated list of what changed in each version.", "The version and date in the badge confirm which controlled copy you are on."]}]};
 
 /* ---- in-app help system ---- */
 let helpOpen=null;
