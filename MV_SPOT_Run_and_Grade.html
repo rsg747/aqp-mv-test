@@ -969,8 +969,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.15";
-const VERSION_DATE = "2026-10-16";
+const VERSION = "2026.10.24";
+const VERSION_DATE = "2026-10-24";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
 const MV_EVENTS = [
@@ -2903,6 +2903,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.10.24",date:"2026-10-24",notes:["Briefing room: new 📺 Briefing button — presents the CQMV.1 briefing / debriefing deck full screen so the iPad can be mirrored to the briefing-room Apple TV (Control Center → Screen Mirroring). Tap or swipe to move, jump to Briefing / Event plan / Debriefing; slides load over Wi-Fi."]},
  {v:"2026.10.15",date:"2026-10-16",notes:["Updated to CQMV.1 Rev 2026.10.15 (747 Lesson Guide and 747-8 SIM 4 Lesson Guide).","New SPOT Circuit 4: RTO (Crew Task) — engine fail at ~20 kts GS, the FO (or CA in the right seat) starts the takeoff as PF and the CA takes control for the reject. New profile point, lesson-guide pop-up and a 2.5.1 column at the end of the SPOT grade sheet. Graded per the new grade sheet: CA as PF / FO as PM; CA/FO once (first half only); CA/CA both halves, and the right-seat CA also receives PM ratings; FO/FO both halves with PF N/A. Placed last in the SPOT AIMS entry order (not yet on the AIMS form), and in the PDF and email.","One app for both aircraft: the lesson guide now follows the FSTD you select. Pick the B747-8 FFS and the pop-ups switch to the 747-8 SIM 4 guide — GIANT 800 / GTI 800, ZFW 260.0, 6 NM finals, Reset ECL steps, SIM 4 IOS menu paths, HOLD S1, EROS masks (not crew-stowable) and the LNAV missed-approach note. Any other FSTD (or none selected) shows the 747-400 guide. The guide in use shows next to the FSTD box and in every pop-up header. Grading is identical on both.","MV Circuit 2 pre-set now reads ‘Clear Malfunction: ENG SEVERE DAMAGE’; SPOT Circuit 2 reset adds Visibility 50 SM and Set up RNAV RWY 10L (ILUDY), per the new guide.","FSTD list: Boeing Miami FAA 1091 (747-400 configuration) and FAA 1264 (747-8 configuration) now show as SIM 4 \u2014 one simulator, configured as a -400 or a -8 for the day."]},
  {v:"2026.10.14",date:"2026-10-14",notes:["Duty fix (CA/CA and FO/FO): a Duty pick on the iPad now always takes on the first try. The app re-reads the Duty boxes before every redraw and on every tap, and the retired crew-list lookup can no longer change a pilot's duty when an Emp number is entered."]},
  {v:"2026.10.13",date:"2026-10-05",notes:["Position tracking: tapping a point on the profile now lights that point green and highlights its grade column(s) below; tapping a grade column header lights the matching point(s) on the profile. Both stay lit after closing the pop-up and after switching runs, so you can see where you are in the profile at a glance."]},
@@ -3585,5 +3586,137 @@ document.querySelectorAll(".xtab").forEach(t=>t.addEventListener("click",()=>{
   setInterval(()=>{ try{ autosave(); }catch(e){} }, 2000);
 })();
 </script>
+<script>window.BRIEF_DECKS=[{"id": "mv", "label": "CQMV.1 Briefing / Debriefing", "sub": "MV + SPOT — briefing, event plan and debriefing"}];</script>
+<style>
+/* ===== Briefing presenter (AirPlay screen mirroring to Apple TV) ===== */
+.tbtn2.brief{border-color:#1e3a5f;background:#16273f;color:#fff;font-weight:800}
+.bp-ov{position:fixed;inset:0;z-index:400;background:rgba(10,16,28,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.bp-menu{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.35);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2430}
+.bp-mh{background:#16273f;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;position:sticky;top:0}
+.bp-mh button{margin-left:auto;border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:8px;width:32px;height:32px;font-size:16px;cursor:pointer}
+.bp-mb{padding:14px 16px 16px}
+.bp-tv{background:#e8f0fc;color:#1e4f86;border-radius:9px;padding:10px 12px;font-size:13px;line-height:1.45;margin-bottom:12px}
+.bp-deck{border:1.5px solid #c9d2de;border-radius:11px;padding:12px;margin-bottom:10px}
+.bp-deck.soon{background:#f5f6f8;border-style:dashed;color:#6b7684}
+.bp-dt{font-weight:800;font-size:15px}
+.bp-ds{font-size:12px;color:#5b6572;margin:2px 0 8px}
+.bp-row{display:flex;flex-wrap:wrap;gap:6px}
+.bp-row button{border:1.5px solid #c9d2de;background:#fff;border-radius:8px;padding:8px 12px;font-weight:800;font-size:13px;cursor:pointer;color:#1b2430}
+.bp-row button.go{background:#16273f;border-color:#16273f;color:#fff}
+.bp-pres{position:fixed;inset:0;z-index:500;background:#000;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:manipulation;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}
+.bp-pres img{max-width:100vw;max-height:100vh;width:auto;height:auto;object-fit:contain;display:block}
+.bp-tapL,.bp-tapR{position:absolute;top:0;bottom:0;width:28%;z-index:1}
+.bp-tapL{left:0}.bp-tapR{right:0}
+.bp-bar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:3;display:flex;gap:7px;align-items:center;background:rgba(18,26,40,.9);border-radius:14px;padding:8px 10px;transition:opacity .25s;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 20px)}
+.bp-bar.hide{opacity:0;pointer-events:none}
+.bp-bar button,.bp-bar select{background:#2b3a50;color:#fff;border:0;border-radius:9px;min-height:44px;min-width:52px;padding:0 13px;font:600 16px -apple-system,Arial,sans-serif;cursor:pointer}
+.bp-bar button.rev{background:#f2c14e;color:#3f3720}
+.bp-bar button.on{background:#5b7fb0}
+.bp-bar button:disabled{opacity:.35}
+.bp-bar .ct{font:600 14px ui-monospace,Menlo,monospace;color:#cfd8e3;padding:0 4px}
+.bp-msg{color:#cfd8e3;font:600 20px -apple-system,Arial,sans-serif;text-align:center;padding:24px;line-height:1.5}
+.bp-msg button{margin-top:16px;background:#2b3a50;color:#fff;border:0;border-radius:9px;padding:10px 18px;font-size:16px;font-weight:700}
+.bp-notes{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:10px;width:min(420px,46vw);max-height:62vh;overflow:auto;background:rgba(255,255,255,.96);color:#1b2430;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.45;white-space:pre-wrap;z-index:2;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.bp-notes b{display:block;color:#a3271b;font-size:11px;letter-spacing:.04em;margin-bottom:6px}
+.bp-tag{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:10px;background:#f2c14e;color:#3f3720;font:800 12px -apple-system,Arial,sans-serif;border-radius:999px;padding:4px 10px;z-index:2}
+</style>
+<script>
+/* ===== Briefing presenter — shows the AQP briefing / debriefing deck (and exams) full screen so the
+   iPad can be mirrored to the briefing-room Apple TV. Slides load from the shared decks folder. ===== */
+(function(){
+  var BASE="https://rsg747.github.io/aqp-mt-test/decks/";
+  var cfg=window.BRIEF_DECKS||[];
+  var cache={}, P={on:false,m:null,list:[],pos:0,rev:false,notes:false,fac:false,hideT:null,lock:null,id:null};
+  function h(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function load(id){
+    if(cache[id]) return Promise.resolve(cache[id]);
+    return fetch(BASE+id+"/manifest.json?v="+Date.now()).then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }).then(function(m){ cache[id]=m; return m; });
+  }
+  function closeMenu(){ var o=document.getElementById("bpMenu"); if(o) o.remove(); }
+  function openMenu(){
+    closeMenu();
+    var ov=document.createElement("div"); ov.className="bp-ov"; ov.id="bpMenu";
+    var html='<div class="bp-menu"><div class="bp-mh">📺 Briefing room — present on the TV<button type="button" data-bpx>✕</button></div><div class="bp-mb">'+
+      '<div class="bp-tv"><b>To show it on the TV:</b> open Control Center on the iPad (swipe down from the top-right corner) → <b>Screen Mirroring</b> → pick the briefing-room Apple TV. Then tap <b>Present</b>. Tap the right or left side of the slide (or swipe) to move; tap the middle to show the controls. Needs Wi-Fi to load the slides.</div>';
+    cfg.forEach(function(d,i){
+      if(d.soon){ html+='<div class="bp-deck soon"><div class="bp-dt">'+h(d.label)+'</div><div class="bp-ds">'+h(d.note||"Coming soon")+'</div></div>'; return; }
+      html+='<div class="bp-deck" data-deck="'+h(d.id)+'"><div class="bp-dt">'+h(d.label)+'</div><div class="bp-ds">'+h(d.sub||"")+'</div><div class="bp-row" data-secs><button type="button" class="go" data-go="'+h(d.id)+'" data-at="">▶ Present</button><span class="bp-ds" style="margin:8px 0 0">loading sections…</span></div></div>';
+    });
+    html+='</div></div>';
+    ov.innerHTML=html; document.body.appendChild(ov);
+    ov.addEventListener("click",function(e){ if(e.target===ov||e.target.closest("[data-bpx]")){ closeMenu(); return; }
+      var g=e.target.closest("[data-go]"); if(g){ closeMenu(); present(g.dataset.go, g.dataset.at===""?null:+g.dataset.at); } });
+    cfg.forEach(function(d){ if(d.soon) return;
+      load(d.id).then(function(m){ var row=ov.querySelector('[data-deck="'+d.id+'"] [data-secs]'); if(!row) return;
+        row.innerHTML='<button type="button" class="go" data-go="'+h(d.id)+'" data-at="">▶ Present</button>'+(m.sections||[]).map(function(s){ return '<button type="button" data-go="'+h(d.id)+'" data-at="'+s[1]+'">'+h(s[0])+'</button>'; }).join("");
+        var ds=ov.querySelector('[data-deck="'+d.id+'"] .bp-ds'); if(ds && !d.sub) ds.textContent=m.slides.length+" slides · "+(m.date?("deck dated "+m.date):"");
+      }).catch(function(){ var row=ov.querySelector('[data-deck="'+d.id+'"] [data-secs]'); if(row) row.innerHTML='<span class="bp-ds" style="color:#a3271b">Slides could not load — check Wi-Fi.</span>'; });
+    });
+  }
+  function buildList(){ var m=P.m; P.list=[]; m.slides.forEach(function(s,i){ if(s.ans) return; if(s.fac && !P.fac) return; P.list.push(i); }); }
+  function present(id, at){
+    var el=document.getElementById("bpPres"); if(!el){ el=document.createElement("div"); el.id="bpPres"; el.className="bp-pres"; document.body.appendChild(el); wire(el); }
+    el.style.display="flex"; el.innerHTML='<div class="bp-msg">Loading slides…</div>';
+    P.on=true; P.id=id; P.rev=false; P.notes=false;
+    try{ var fs=el.requestFullscreen||el.webkitRequestFullscreen; if(fs){ var r=fs.call(el); if(r&&r.catch) r.catch(function(){}); } }catch(e){}
+    try{ if(navigator.wakeLock) navigator.wakeLock.request("screen").then(function(l){ P.lock=l; }).catch(function(){}); }catch(e){}
+    load(id).then(function(m){ P.m=m; P.fac=false; buildList();
+      var start=(at==null)?(m.start||0):at; if(m.slides[start]&&m.slides[start].fac){ P.fac=true; buildList(); }
+      P.pos=Math.max(0,P.list.indexOf(start)); if(P.pos<0) P.pos=0; draw(); poke(); })
+    .catch(function(){ el.innerHTML='<div class="bp-msg">The slides could not be loaded.<br><small>They load over Wi-Fi from the AQP decks folder.</small><br><button type="button" data-bp="exit">Close</button></div>'; });
+  }
+  function ansOf(i){ var s=P.m.slides[i+1]; return (s&&s.ans)?i+1:-1; }
+  function draw(){
+    var el=document.getElementById("bpPres"); if(!el||!P.m) return;
+    var i=P.list[P.pos], s=P.m.slides[i], a=ansOf(i), show=(P.rev&&a>=0)?a:i;
+    var secs=(P.m.sections||[]);
+    el.innerHTML='<img alt="Slide '+(i+1)+'" src="'+BASE+P.id+'/'+P.m.slides[show].f+'">'+
+      '<div class="bp-tapL" data-bp="prev"></div><div class="bp-tapR" data-bp="next"></div>'+
+      (s.fac?'<div class="bp-tag">Instructor slide</div>':'')+
+      (P.notes&&P.m.slides[show].n?'<div class="bp-notes"><b>INSTRUCTOR NOTES — also showing on the TV</b>'+h(P.m.slides[show].n)+'</div>':'')+
+      '<div class="bp-bar" id="bpBar"><button type="button" data-bp="prev" '+(P.pos===0?"disabled":"")+'>‹</button><span class="ct">'+(P.pos+1)+' / '+P.list.length+'</span>'+
+      (a>=0?'<button type="button" class="'+(P.rev?"":"rev")+'" data-bp="rev">'+(P.rev?"Hide finding":"Reveal finding")+'</button>':'')+
+      '<button type="button" data-bp="next" '+(P.pos>=P.list.length-1?"disabled":"")+'>›</button>'+
+      (secs.length?'<select data-bp="sec" aria-label="Jump to section"><option value="">Jump to…</option>'+secs.map(function(x){ return '<option value="'+x[1]+'">'+h(x[0])+'</option>'; }).join("")+'</select>':'')+
+      '<button type="button" class="'+(P.notes?"on":"")+'" data-bp="notes" title="Instructor notes — anything on the iPad also shows on the TV">Notes</button>'+
+      (P.m.slides.some(function(x){return x.fac;})?'<button type="button" class="'+(P.fac?"on":"")+'" data-bp="fac" title="Show the instructor-only slides at the front of the deck">Instr. slides</button>':'')+
+      '<button type="button" data-bp="exit">Exit</button></div>';
+    var nx=P.list[P.pos+1]; if(nx!=null){ var im=new Image(); im.src=BASE+P.id+'/'+P.m.slides[nx].f; }
+    if(a>=0){ var im2=new Image(); im2.src=BASE+P.id+'/'+P.m.slides[a].f; }
+  }
+  function poke(){ var b=document.getElementById("bpBar"); if(!b) return; b.classList.remove("hide"); clearTimeout(P.hideT); P.hideT=setTimeout(function(){ var x=document.getElementById("bpBar"); if(x) x.classList.add("hide"); },3500); }
+  function act(a,v){
+    if(a==="exit"){ P.on=false; var el=document.getElementById("bpPres"); if(el){ el.style.display="none"; el.innerHTML=""; } try{ if(document.fullscreenElement) document.exitFullscreen(); else if(document.webkitFullscreenElement) document.webkitExitFullscreen(); }catch(e){} try{ P.lock&&P.lock.release(); }catch(e){} P.lock=null; return; }
+    if(!P.m) return;
+    if(a==="next"){ if(P.list[P.pos]!=null && ansOf(P.list[P.pos])>=0 && !P.rev){ P.rev=true; } else if(P.pos<P.list.length-1){ P.pos++; P.rev=false; } }
+    else if(a==="prev"){ if(P.rev){ P.rev=false; } else if(P.pos>0){ P.pos--; P.rev=false; } }
+    else if(a==="rev") P.rev=!P.rev;
+    else if(a==="notes") P.notes=!P.notes;
+    else if(a==="fac"){ var cur=P.list[P.pos]; P.fac=!P.fac; buildList(); var j=P.list.indexOf(cur); P.pos=j>=0?j:0; }
+    else if(a==="sec"){ var t=+v; if(P.m.slides[t]&&P.m.slides[t].fac&&!P.fac){ P.fac=true; buildList(); } var k=P.list.indexOf(t); if(k>=0){ P.pos=k; P.rev=false; } }
+    draw(); poke();
+  }
+  function wire(el){
+    el.addEventListener("click",function(e){ var t=e.target.closest("[data-bp]"); if(t && t.tagName!=="SELECT"){ e.stopPropagation(); if(!t.disabled) act(t.dataset.bp); } else if(!t) poke(); });
+    el.addEventListener("change",function(e){ var t=e.target.closest('[data-bp="sec"]'); if(t&&t.value!=="") act("sec",t.value); });
+    var sx=null; el.addEventListener("touchstart",function(e){ sx=e.touches[0].clientX; },{passive:true});
+    el.addEventListener("touchend",function(e){ if(sx==null) return; var dx=e.changedTouches[0].clientX-sx; sx=null; if(Math.abs(dx)>60) act(dx<0?"next":"prev"); },{passive:true});
+    document.addEventListener("keydown",function(e){ if(!P.on) return;
+      if(["ArrowRight","PageDown"," "].indexOf(e.key)>=0){ e.preventDefault(); act("next"); }
+      else if(["ArrowLeft","PageUp"].indexOf(e.key)>=0){ e.preventDefault(); act("prev"); }
+      else if(e.key==="Escape") act("exit"); else if(e.key==="r"||e.key==="Enter") act("rev"); });
+  }
+  window.openBriefing=openMenu; window.presentDeck=present;
+  function addButton(){
+    if(document.querySelector('[data-tb="brief"]')) return;
+    var tb=document.querySelector(".toolbar"); if(!tb) return;
+    var b=document.createElement("button"); b.type="button"; b.className="tbtn2 brief"; b.dataset.tb="brief"; b.textContent="📺 Briefing";
+    b.addEventListener("click",function(e){ e.preventDefault(); e.stopPropagation(); openMenu(); });
+    tb.insertBefore(b, tb.firstChild);
+  }
+  if(document.readyState!=="loading") addButton(); else document.addEventListener("DOMContentLoaded",addButton);
+})();
+</script>
+
 </body>
 </html>
