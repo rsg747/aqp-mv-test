@@ -969,7 +969,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.25";
+const VERSION = "2026.10.25.2";
 const VERSION_DATE = "2026-10-25";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
@@ -1482,7 +1482,7 @@ function pmRunFor(pk,ex){ return pfRunFor(pk,ex)===1 ? 2 : 1; }
 const person = { pf1st:{name:"",emp:""}, pf2nd:{name:"",emp:""} };
 let sessionDate = ""; let dateUserSet = false;
 let instructor = {name:"", emp:""};
-let crewSession = {MV:{pf1st:{to:"1",ldg:"2",spec:"No"}, pf2nd:{to:"1",ldg:"2",spec:"No"}}, SPOT:{pf1st:{to:"0",ldg:"1",spec:"No"}, pf2nd:{to:"0",ldg:"1",spec:"No"}}};
+let crewSession = {MV:{pf1st:{to:"1",ldg:"2",spec:"No",brief:"No",briefAt:""}, pf2nd:{to:"1",ldg:"2",spec:"No",brief:"No",briefAt:""}}, SPOT:{pf1st:{to:"0",ldg:"1",spec:"No"}, pf2nd:{to:"0",ldg:"1",spec:"No"}}};
 const ATTEMPT_OPTS = ["Initial Attempt","Remedial Attempt 1","Remedial Attempt 2","Remedial Attempt 3","Remedial Attempt 4","Repeat Attempt 1","Repeat Attempt 2","Repeat Attempt 3","Repeat Attempt 4"];
 const take = {pf1st:"Initial Attempt", pf2nd:"Initial Attempt"};
 /* AIMS 'Module Attempt Status'. Older saved sessions stored a Take number: 1 -> Initial Attempt, n -> Repeat Attempt n-1. */
@@ -1710,6 +1710,7 @@ function crewRowHTML(pk, label, ex){
       <label>T/O <select class="dutysel" data-cs="to" data-person="${pk}">${nOpts(cs.to)}</select></label>
       <label>Ldg <select class="dutysel" data-cs="ldg" data-person="${pk}">${nOpts(cs.ldg)}</select></label>
       <label>Special Tracking <select class="dutysel" data-cs="spec" data-person="${pk}"><option${cs.spec!=="Yes"?" selected":""}>No</option><option${cs.spec==="Yes"?" selected":""}>Yes</option></select></label>
+      ${ex==="MV"?`<label title="Briefing completed — recorded in AIMS for the MV module">Briefed <select class="dutysel briefsel${cs.brief==="Yes"?" yes":""}" data-cs="brief" data-person="${pk}"><option${cs.brief!=="Yes"?" selected":""}>No</option><option${cs.brief==="Yes"?" selected":""}>Yes</option></select></label>`:""}
     </div>`;
 }
 /* ---- build a run-and-grade sheet ---- */
@@ -1759,9 +1760,9 @@ function buildSheet(ex){
   wrap.querySelector(".profhost").appendChild(buildProfile(ex));
   wrap.querySelector(".gridwrap").appendChild(buildGrid(ex,events));
   wrap.querySelectorAll(".dutysel").forEach(sel=>{
-    if(!sel.dataset.person) return;            // the Attempt select shares this class
+    if(!sel.dataset.person || sel.dataset.cs) return;   // T/O, Ldg, Special Tracking, Briefing boxes are not Duty            // the Attempt select shares this class
     sel.dataset.rendered=sel.value;            // what the box showed when it was drawn
-    const commit=()=>{ if(duty[sel.dataset.person]!==sel.value){ duty[sel.dataset.person]=sel.value; render(); } };
+    const commit=()=>{ if(["CA","FO","Seat Support"].indexOf(sel.value)<0) return; if(duty[sel.dataset.person]!==sel.value){ duty[sel.dataset.person]=sel.value; render(); } };
     sel.addEventListener("change",commit);     // re-apply duty rules everywhere
     sel.addEventListener("input",commit);      // iPad: some pickers report via input
     sel.addEventListener("blur",commit);       // iPad: catch a pick that fired no event
@@ -1772,7 +1773,7 @@ function buildSheet(ex){
   wrap.querySelectorAll(".meta input[data-instr]").forEach(inp=>{
     inp.addEventListener("input",()=>{ instructor[inp.dataset.instr]=inp.value; });
   });
-  wrap.querySelectorAll("[data-cs]").forEach(sel=>{ sel.addEventListener("change",()=>{ crewSession[ex][sel.dataset.person][sel.dataset.cs]=sel.value; if(typeof autosave==="function") autosave(); }); });
+  wrap.querySelectorAll("[data-cs]").forEach(sel=>{ sel.addEventListener("change",()=>{ crewSession[ex][sel.dataset.person][sel.dataset.cs]=sel.value; if(sel.dataset.cs==="brief"){ crewSession[ex][sel.dataset.person].briefAt = sel.value==="Yes" ? new Date().toISOString() : ""; sel.classList.toggle("yes", sel.value==="Yes"); } if(typeof autosave==="function") autosave(); }); });
   wrap.querySelectorAll("[data-take]").forEach(ts=>{ const pk=ts.dataset.take; ts.value=take[pk]; ts.addEventListener("change",()=>{ take[pk]=ts.value; }); });
   wrap.querySelectorAll(".meta input[data-field]").forEach(inp=>{
     inp.addEventListener("input",()=>{
@@ -2714,7 +2715,7 @@ function buildAIMS(){
       </div>
     </div>
     <div class="note">Grades mirror the ${ex} Run sheets (read-only). Enter into AIMS top-to-bottom: each student PF then PM · Seat Support = not graded. <span class="qbtn" data-help="aims">?</span> MV and SPOT are entered as two separate graders.</div>
-    <div class="note" style="font-weight:600">Module Status (${AIMS_EX}) — PF 1st: T/O ${esc(crewSession[AIMS_EX].pf1st.to)} · Ldg ${esc(crewSession[AIMS_EX].pf1st.ldg)} · Special ${esc(crewSession[AIMS_EX].pf1st.spec)} &nbsp;|&nbsp; PF 2nd: T/O ${esc(crewSession[AIMS_EX].pf2nd.to)} · Ldg ${esc(crewSession[AIMS_EX].pf2nd.ldg)} · Special ${esc(crewSession[AIMS_EX].pf2nd.spec)}</div>
+    <div class="note" style="font-weight:600">Module Status (${AIMS_EX}) — PF 1st: T/O ${esc(crewSession[AIMS_EX].pf1st.to)} · Ldg ${esc(crewSession[AIMS_EX].pf1st.ldg)} · Special ${esc(crewSession[AIMS_EX].pf1st.spec)}${AIMS_EX==="MV"?" · Briefing completed "+esc(crewSession.MV.pf1st.brief||"No"):""} &nbsp;|&nbsp; PF 2nd: T/O ${esc(crewSession[AIMS_EX].pf2nd.to)} · Ldg ${esc(crewSession[AIMS_EX].pf2nd.ldg)} · Special ${esc(crewSession[AIMS_EX].pf2nd.spec)}${AIMS_EX==="MV"?" · Briefing completed "+esc(crewSession.MV.pf2nd.brief||"No"):""}</div>
     <div id="aimsStudents"></div>
   `;
   const host=wrap.querySelector("#aimsStudents");
@@ -2889,7 +2890,7 @@ function applySnapshot(s){
   sessionDate = s.sessionDate||"";
   dateUserSet = !!s.dateUserSet;
   if(s.flip){ flip.MV=!!s.flip.MV; flip.SPOT=!!s.flip.SPOT; } else { flip.MV=false; flip.SPOT=false; }
-  ["MV","SPOT"].forEach(exk=>{ const d=(exk==="SPOT")?{to:"0",ldg:"1",spec:"No"}:{to:"1",ldg:"2",spec:"No"}; crewSession[exk]=crewSession[exk]||{}; ["pf1st","pf2nd"].forEach(pk=>{ const v=(s.crewSession&&s.crewSession[exk]&&s.crewSession[exk][pk])||{}; crewSession[exk][pk]={to:v.to!==undefined?v.to:d.to, ldg:v.ldg!==undefined?v.ldg:d.ldg, spec:v.spec||d.spec}; }); });
+  ["MV","SPOT"].forEach(exk=>{ const d=(exk==="SPOT")?{to:"0",ldg:"1",spec:"No"}:{to:"1",ldg:"2",spec:"No"}; crewSession[exk]=crewSession[exk]||{}; ["pf1st","pf2nd"].forEach(pk=>{ const v=(s.crewSession&&s.crewSession[exk]&&s.crewSession[exk][pk])||{}; crewSession[exk][pk]={to:v.to!==undefined?v.to:d.to, ldg:v.ldg!==undefined?v.ldg:d.ldg, spec:v.spec||d.spec}; if(exk==="MV"){ crewSession[exk][pk].brief=v.brief==="Yes"?"Yes":"No"; crewSession[exk][pk].briefAt=v.briefAt||""; } }); });
   clearObj(incReason); if(s.incReason) Object.assign(incReason, s.incReason); else if(s.simFail){ Object.keys(s.simFail).forEach(k=>{ if(s.simFail[k]) incReason[k]="sim"; }); }
   clearObj(ssNotes); if(s.ssNotes) Object.assign(ssNotes, s.ssNotes);
   if(s.instructor){ instructor.name=s.instructor.name||""; instructor.emp=s.instructor.emp||""; } if(s.take){ take.pf1st=normAttempt(s.take.pf1st); take.pf2nd=normAttempt(s.take.pf2nd); }
@@ -2903,6 +2904,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.10.25.2",date:"2026-10-25",notes:["Fix: changing a pilot's T/O, Ldg or Special Tracking box could overwrite that pilot's Duty behind the scenes (the screen still showed CA/FO), which could throw off the seat and N/A rules for that crew. The Duty box is now the only thing that sets Duty. If a crew was graded after changing T/O, Ldg or Special Tracking, re-check its Duty boxes and N/A cells.","AIMS: Briefing completed is now recorded for the MV module — a Briefing completed (Yes/No) box beside each pilot on the MV sheet, shown in the AIMS Module Status line and on the PDF AIMS page (and in the Data Test Group submitted record, with the time it was marked).", "After presenting the CQMV.1 briefing through the Event Plan, the app offers to record Briefing completed for both crewmembers.", "SPOT AIMS entry order confirmed: 2.5.1 RTO is now on the AIMS form, last — no order change."]},
  {v:"2026.10.25",date:"2026-10-25",notes:["MV AIMS entry order updated to match the AIMS change: the AIMS screen and the AIMS-order PDF page now list the MV tasks in profile (flown) order — 2.3, 10.1, 4.1.2, 6.8.3, 6.8.4, 6.9.3, 7.3.1, 7.3.2, 2.5.1. SPOT order unchanged."]},
  {v:"2026.10.24",date:"2026-10-24",notes:["Briefing room: new 📺 Briefing button — presents the CQMV.1 briefing / debriefing deck full screen so the iPad can be mirrored to the briefing-room Apple TV (Control Center → Screen Mirroring). Tap or swipe to move, jump to Briefing / Event plan / Debriefing; slides load over Wi-Fi."]},
  {v:"2026.10.15",date:"2026-10-16",notes:["Updated to CQMV.1 Rev 2026.10.15 (747 Lesson Guide and 747-8 SIM 4 Lesson Guide).","New SPOT Circuit 4: RTO (Crew Task) — engine fail at ~20 kts GS, the FO (or CA in the right seat) starts the takeoff as PF and the CA takes control for the reject. New profile point, lesson-guide pop-up and a 2.5.1 column at the end of the SPOT grade sheet. Graded per the new grade sheet: CA as PF / FO as PM; CA/FO once (first half only); CA/CA both halves, and the right-seat CA also receives PM ratings; FO/FO both halves with PF N/A. Placed last in the SPOT AIMS entry order (not yet on the AIMS form), and in the PDF and email.","One app for both aircraft: the lesson guide now follows the FSTD you select. Pick the B747-8 FFS and the pop-ups switch to the 747-8 SIM 4 guide — GIANT 800 / GTI 800, ZFW 260.0, 6 NM finals, Reset ECL steps, SIM 4 IOS menu paths, HOLD S1, EROS masks (not crew-stowable) and the LNAV missed-approach note. Any other FSTD (or none selected) shows the 747-400 guide. The guide in use shows next to the FSTD box and in every pop-up header. Grading is identical on both.","MV Circuit 2 pre-set now reads ‘Clear Malfunction: ENG SEVERE DAMAGE’; SPOT Circuit 2 reset adds Visibility 50 SM and Set up RNAV RWY 10L (ILUDY), per the new guide.","FSTD list: Boeing Miami FAA 1091 (747-400 configuration) and FAA 1264 (747-8 configuration) now show as SIM 4 \u2014 one simulator, configured as a -400 or a -8 for the day."]},
@@ -3015,6 +3017,7 @@ function doNew(){
   clearObj(timers); clearObj(incReason); clearObj(ssNotes); instructor.name=""; instructor.emp=""; take.pf1st="Initial Attempt"; take.pf2nd="Initial Attempt"; RUN=1; EX="MV";
   document.querySelectorAll(".rtab").forEach(x=>x.classList.toggle("on", x.dataset.run==="1"));
   document.querySelectorAll(".xtab").forEach(x=>x.classList.toggle("on", x.dataset.x==="MV"));
+  ["pf1st","pf2nd"].forEach(pk=>{ crewSession.MV[pk].brief="No"; crewSession.MV[pk].briefAt=""; });
   autosave(); render();
 }
 /* ---- Save-as-PDF (built in-app with jsPDF so it works in PDF Expert) ---- */
@@ -3148,7 +3151,7 @@ function makePdf(){
         const pfR=pfRunFor(pk,ex), pmR=pmRunFor(pk,ex); const nm=person[pk].name||slab;
         const _nr=1+order.length; const _bh=22+_nr*15+10+_nr*15+16; if(y+_bh > doc.internal.pageSize.getHeight()-34){ doc.addPage(); y=M; }
         doc.setFontSize(10); doc.setFont(undefined,"bold");
-        doc.text(ex+" \u00b7 "+slab+" \u2014 "+nm+"  \u00b7  Emp "+(person[pk].emp||"\u2014")+" ("+duty[pk]+")    PF: "+seatFull(pfR,pk,ex)+"  /  PM: "+seatFull(pmR,pk,ex)+"    "+normAttempt(take[pk]), M, y+10); y+=15;
+        doc.text(ex+" \u00b7 "+slab+" \u2014 "+nm+"  \u00b7  Emp "+(person[pk].emp||"\u2014")+" ("+duty[pk]+")    PF: "+seatFull(pfR,pk,ex)+"  /  PM: "+seatFull(pmR,pk,ex)+"    "+normAttempt(take[pk])+(ex==="MV"?"    Briefing completed: "+((crewSession.MV[pk]||{}).brief||"No"):""), M, y+10); y+=15;
         const pfBody=order.map(c=>{ const ev=evByCode(events,c); return [ev.code+" "+ev.nm, prCell(ex,pfR,ev,"H").t, prCell(ex,pfR,ev,"SOP").t, prCell(ex,pfR,ev,"A").t, prCell(ex,pfR,ev,"CRM").t]; });
         doc.autoTable({ head:[["PF \u00b7 Run "+pfR,"H","SOP","A","CRM"]], body:pfBody, startY:y, margin:{left:M,right:M},
           styles:{fontSize:7,halign:"center",valign:"middle",cellPadding:2,lineColor:[70,70,70], lineWidth:1, fontStyle:"bold"},
@@ -3552,7 +3555,8 @@ function syncDutyFromUI(){
   return changed;
 }
 document.addEventListener("pointerdown",()=>{ try{ if(syncDutyFromUI()) render(); }catch(e){} },true);
-function render(){
+function _fixDuty(){ ["pf1st","pf2nd"].forEach(function(pk){ if(["CA","FO","Seat Support"].indexOf(duty[pk])<0){ var sel=document.querySelector('select.dutysel[data-person="'+pk+'"]:not([data-cs])'); duty[pk]=(sel&&["CA","FO","Seat Support"].indexOf(sel.value)>=0)?sel.value:(pk==="pf1st"?"CA":"FO"); } }); }
+function render(){ try{ _fixDuty(); }catch(e){}
   try{ syncDutyFromUI(); }catch(e){}
   document.body.classList.toggle("run1",RUN===1);
   document.body.classList.toggle("run2",RUN===2);
@@ -3627,7 +3631,7 @@ document.querySelectorAll(".xtab").forEach(t=>t.addEventListener("click",()=>{
 (function(){
   var BASE="https://rsg747.github.io/aqp-mt-test/decks/";
   var cfg=window.BRIEF_DECKS||[];
-  var cache={}, P={on:false,m:null,list:[],pos:0,rev:false,notes:false,fac:false,hideT:null,lock:null,id:null};
+  var cache={}, P={on:false,m:null,list:[],pos:0,rev:false,notes:false,fac:false,hideT:null,lock:null,id:null,maxSeen:-1};
   function h(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
   function load(id){
     if(cache[id]) return Promise.resolve(cache[id]);
@@ -3658,7 +3662,7 @@ document.querySelectorAll(".xtab").forEach(t=>t.addEventListener("click",()=>{
   function present(id, at){
     var el=document.getElementById("bpPres"); if(!el){ el=document.createElement("div"); el.id="bpPres"; el.className="bp-pres"; document.body.appendChild(el); wire(el); }
     el.style.display="flex"; el.innerHTML='<div class="bp-msg">Loading slides…</div>';
-    P.on=true; P.id=id; P.rev=false; P.notes=false;
+    P.on=true; P.id=id; P.rev=false; P.notes=false; P.maxSeen=-1;
     try{ var fs=el.requestFullscreen||el.webkitRequestFullscreen; if(fs){ var r=fs.call(el); if(r&&r.catch) r.catch(function(){}); } }catch(e){}
     try{ if(navigator.wakeLock) navigator.wakeLock.request("screen").then(function(l){ P.lock=l; }).catch(function(){}); }catch(e){}
     load(id).then(function(m){ P.m=m; P.fac=false; buildList();
@@ -3669,7 +3673,7 @@ document.querySelectorAll(".xtab").forEach(t=>t.addEventListener("click",()=>{
   function ansOf(i){ var s=P.m.slides[i+1]; return (s&&s.ans)?i+1:-1; }
   function draw(){
     var el=document.getElementById("bpPres"); if(!el||!P.m) return;
-    var i=P.list[P.pos], s=P.m.slides[i], a=ansOf(i), show=(P.rev&&a>=0)?a:i;
+    var i=P.list[P.pos], s=P.m.slides[i], a=ansOf(i), show=(P.rev&&a>=0)?a:i; if(i>P.maxSeen) P.maxSeen=i;
     var secs=(P.m.sections||[]);
     el.innerHTML='<img alt="Slide '+(i+1)+'" src="'+BASE+P.id+'/'+P.m.slides[show].f+'">'+
       '<div class="bp-tapL" data-bp="prev"></div><div class="bp-tapR" data-bp="next"></div>'+
@@ -3687,7 +3691,7 @@ document.querySelectorAll(".xtab").forEach(t=>t.addEventListener("click",()=>{
   }
   function poke(){ var b=document.getElementById("bpBar"); if(!b) return; b.classList.remove("hide"); clearTimeout(P.hideT); P.hideT=setTimeout(function(){ var x=document.getElementById("bpBar"); if(x) x.classList.add("hide"); },3500); }
   function act(a,v){
-    if(a==="exit"){ P.on=false; var el=document.getElementById("bpPres"); if(el){ el.style.display="none"; el.innerHTML=""; } try{ if(document.fullscreenElement) document.exitFullscreen(); else if(document.webkitFullscreenElement) document.webkitExitFullscreen(); }catch(e){} try{ P.lock&&P.lock.release(); }catch(e){} P.lock=null; return; }
+    if(a==="exit"){ try{ var ep=(P.m&&P.m.sections||[]).filter(function(x){return x[0]==="Event plan";})[0]; if(ep && P.maxSeen>=ep[1] && typeof window.BRIEF_DONE_HOOK==="function") setTimeout(function(){ window.BRIEF_DONE_HOOK(P.id); },150); }catch(e){} P.on=false; var el=document.getElementById("bpPres"); if(el){ el.style.display="none"; el.innerHTML=""; } try{ if(document.fullscreenElement) document.exitFullscreen(); else if(document.webkitFullscreenElement) document.webkitExitFullscreen(); }catch(e){} try{ P.lock&&P.lock.release(); }catch(e){} P.lock=null; return; }
     if(!P.m) return;
     if(a==="next"){ if(P.list[P.pos]!=null && ansOf(P.list[P.pos])>=0 && !P.rev){ P.rev=true; } else if(P.pos<P.list.length-1){ P.pos++; P.rev=false; } }
     else if(a==="prev"){ if(P.rev){ P.rev=false; } else if(P.pos>0){ P.pos--; P.rev=false; } }
@@ -3719,5 +3723,19 @@ document.querySelectorAll(".xtab").forEach(t=>t.addEventListener("click",()=>{
 })();
 </script>
 
+<style>.crewwrap{padding-right:86px}.crewwrap .meta input[data-field="name"]{width:118px}.crewwrap .meta select.dutysel[data-person]:not([data-cs]){width:84px !important;min-width:0 !important}.crewwrap .meta select.dutysel[data-take]{width:140px !important;min-width:0 !important}.dutysel.briefsel.yes{background:#e6f6ec;border-color:#9dd3b0;color:#14713c;font-weight:800}</style>
+<script>
+/* MV: after presenting the briefing through to the Event plan, offer to record "Briefing completed" (AIMS, MV module) */
+window.BRIEF_DONE_HOOK=function(deck){
+  if(deck!=="mv") return;
+  var cs=crewSession.MV; if(cs.pf1st.brief==="Yes" && cs.pf2nd.brief==="Yes") return;
+  var m=document.createElement("div"); m.className="mo-msg";
+  m.innerHTML="The briefing deck was presented through the Event Plan.<br><br>Record <b>Briefing completed = Yes</b> for both crewmembers on the MV module? It shows on the AIMS page, the PDF and (Data Test Group) the submitted record.";
+  showModal("Briefing completed", m, [
+    {label:"Record Briefing completed", kind:"primary", onClick:function(){ var t=new Date().toISOString(); ["pf1st","pf2nd"].forEach(function(pk){ if(duty[pk]==="Seat Support") return; cs[pk].brief="Yes"; cs[pk].briefAt=t; }); closeModal(); try{ autosave(); }catch(e){} render(); toast("Briefing completed recorded (MV)"); }},
+    {label:"Not yet", onClick:closeModal}
+  ]);
+};
+</script>
 </body>
 </html>
