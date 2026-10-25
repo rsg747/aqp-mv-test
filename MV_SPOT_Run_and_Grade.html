@@ -969,8 +969,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.24";
-const VERSION_DATE = "2026-10-24";
+const VERSION = "2026.10.25";
+const VERSION_DATE = "2026-10-25";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
 const MV_EVENTS = [
@@ -2835,7 +2835,7 @@ function aimsTable(ex,events,side,person,run){
   const tb=document.createElement("tbody");
   // AIMS entry order per exercise
   const order = ex==="MV"
-    ? ["2.3","2.5.1","4.1.2","6.8.3","6.8.4","6.9.3","7.3.1","7.3.2","10.1"]
+    ? ["2.3","10.1","4.1.2","6.8.3","6.8.4","6.9.3","7.3.1","7.3.2","2.5.1"]
     : ["6.7","7.2","10.2.1","10.3.1","2.5.1"];
   order.forEach(code=>{
     const ev=events.find(e=>e.code===code);
@@ -2903,6 +2903,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.10.25",date:"2026-10-25",notes:["MV AIMS entry order updated to match the AIMS change: the AIMS screen and the AIMS-order PDF page now list the MV tasks in profile (flown) order — 2.3, 10.1, 4.1.2, 6.8.3, 6.8.4, 6.9.3, 7.3.1, 7.3.2, 2.5.1. SPOT order unchanged."]},
  {v:"2026.10.24",date:"2026-10-24",notes:["Briefing room: new 📺 Briefing button — presents the CQMV.1 briefing / debriefing deck full screen so the iPad can be mirrored to the briefing-room Apple TV (Control Center → Screen Mirroring). Tap or swipe to move, jump to Briefing / Event plan / Debriefing; slides load over Wi-Fi."]},
  {v:"2026.10.15",date:"2026-10-16",notes:["Updated to CQMV.1 Rev 2026.10.15 (747 Lesson Guide and 747-8 SIM 4 Lesson Guide).","New SPOT Circuit 4: RTO (Crew Task) — engine fail at ~20 kts GS, the FO (or CA in the right seat) starts the takeoff as PF and the CA takes control for the reject. New profile point, lesson-guide pop-up and a 2.5.1 column at the end of the SPOT grade sheet. Graded per the new grade sheet: CA as PF / FO as PM; CA/FO once (first half only); CA/CA both halves, and the right-seat CA also receives PM ratings; FO/FO both halves with PF N/A. Placed last in the SPOT AIMS entry order (not yet on the AIMS form), and in the PDF and email.","One app for both aircraft: the lesson guide now follows the FSTD you select. Pick the B747-8 FFS and the pop-ups switch to the 747-8 SIM 4 guide — GIANT 800 / GTI 800, ZFW 260.0, 6 NM finals, Reset ECL steps, SIM 4 IOS menu paths, HOLD S1, EROS masks (not crew-stowable) and the LNAV missed-approach note. Any other FSTD (or none selected) shows the 747-400 guide. The guide in use shows next to the FSTD box and in every pop-up header. Grading is identical on both.","MV Circuit 2 pre-set now reads ‘Clear Malfunction: ENG SEVERE DAMAGE’; SPOT Circuit 2 reset adds Visibility 50 SM and Set up RNAV RWY 10L (ILUDY), per the new guide.","FSTD list: Boeing Miami FAA 1091 (747-400 configuration) and FAA 1264 (747-8 configuration) now show as SIM 4 \u2014 one simulator, configured as a -400 or a -8 for the day."]},
  {v:"2026.10.14",date:"2026-10-14",notes:["Duty fix (CA/CA and FO/FO): a Duty pick on the iPad now always takes on the first try. The app re-reads the Duty boxes before every redraw and on every tap, and the retired crew-list lookup can no longer change a pilot's duty when an Emp number is entered."]},
@@ -3133,7 +3134,7 @@ function makePdf(){
   });
   // ---- AIMS entry order tables (per student, PF then PM) ----
   (function(){
-    const AIMS_ORDER = { MV:["2.3","2.5.1","4.1.2","6.8.3","6.8.4","6.9.3","7.3.1","7.3.2","10.1"], SPOT:["6.7","7.2","10.2.1","10.3.1","2.5.1"] };
+    const AIMS_ORDER = { MV:["2.3","10.1","4.1.2","6.8.3","6.8.4","6.9.3","7.3.1","7.3.2","2.5.1"], SPOT:["6.7","7.2","10.2.1","10.3.1","2.5.1"] };
     const evByCode=(events,c)=>events.find(e=>e.code===c);
     doc.addPage(); y=M;
     doc.setFontSize(13); doc.setFont(undefined,"bold"); doc.setTextColor(30,58,95);
