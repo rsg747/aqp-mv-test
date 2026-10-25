@@ -969,7 +969,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.25.3";
+const VERSION = "2026.10.25.4";
 const VERSION_DATE = "2026-10-25";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
@@ -2904,6 +2904,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.10.25.4",date:"2026-10-25",notes:["Crew rows: shorter Duty box; the Swap button now sits in its own column beside the two pilot rows, and a row wraps to a second line on a narrower iPad screen instead of running under the Swap button."]},
  {v:"2026.10.25.3",date:"2026-10-25",notes:["Crew rows tidied: “Special Tracking” is now labeled ST (the AIMS abbreviation) with an ⓘ button that explains it — Briefed has one too. Frees room on the iPad crew line."]},
  {v:"2026.10.25.2",date:"2026-10-25",notes:["Fix: changing a pilot's T/O, Ldg or Special Tracking box could overwrite that pilot's Duty behind the scenes (the screen still showed CA/FO), which could throw off the seat and N/A rules for that crew. The Duty box is now the only thing that sets Duty. If a crew was graded after changing T/O, Ldg or Special Tracking, re-check its Duty boxes and N/A cells.","AIMS: Briefing completed is now recorded for the MV module — a Briefing completed (Yes/No) box beside each pilot on the MV sheet, shown in the AIMS Module Status line and on the PDF AIMS page (and in the Data Test Group submitted record, with the time it was marked).", "After presenting the CQMV.1 briefing through the Event Plan, the app offers to record Briefing completed for both crewmembers.", "SPOT AIMS entry order confirmed: 2.5.1 RTO is now on the AIMS form, last — no order change."]},
  {v:"2026.10.25",date:"2026-10-25",notes:["MV AIMS entry order updated to match the AIMS change: the AIMS screen and the AIMS-order PDF page now list the MV tasks in profile (flown) order — 2.3, 10.1, 4.1.2, 6.8.3, 6.8.4, 6.9.3, 7.3.1, 7.3.2, 2.5.1. SPOT order unchanged."]},
@@ -3724,7 +3725,7 @@ document.querySelectorAll(".xtab").forEach(t=>t.addEventListener("click",()=>{
 })();
 </script>
 
-<style>.crewwrap{padding-right:86px}.crewwrap .meta input[data-field="name"]{width:132px}.dutysel.briefsel.yes{background:#e6f6ec;border-color:#9dd3b0;color:#14713c;font-weight:800}</style>
+<style>.crewwrap .meta input[data-field="name"]{width:125px}.dutysel.briefsel.yes{background:#e6f6ec;border-color:#9dd3b0;color:#14713c;font-weight:800}</style>
 <script>
 /* MV: after presenting the briefing through to the Event plan, offer to record "Briefing completed" (AIMS, MV module) */
 window.BRIEF_DONE_HOOK=function(deck){
@@ -3747,5 +3748,6 @@ document.addEventListener("click",function(e){
   else { m.innerHTML="<b>Briefed = Briefing completed</b> — recorded in AIMS for the MV module.<br><br>Set <b>Yes</b> once the CQMV.1 briefing is done. Presenting the briefing deck through the Event Plan offers to set it for both pilots."; showModal("Briefed — Briefing completed", m, [{label:"OK",kind:"primary",onClick:closeModal}]); }
 }, true);
 </script>
+<style>/* crew rows: Swap sits in its own column and the rows wrap instead of running under it */.crewwrap{display:grid !important;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:center;padding-right:0 !important}.crewwrap>.meta{grid-column:1;flex-wrap:wrap !important;overflow:visible !important;row-gap:6px;margin:4px 0 !important}.crewwrap>.swapbtn{position:static !important;grid-column:2;grid-row:1 / span 2;align-self:center;white-space:nowrap}.crewwrap .meta select.dutysel[data-person]:not([data-cs]){width:78px !important;min-width:0 !important}.crewwrap .meta select.dutysel[data-take]{width:132px !important;min-width:0 !important}.crewwrap .meta input[data-field="name"]{width:115px !important}.crewwrap .meta input[data-field="emp"]{width:70px !important}</style>
 </body>
 </html>
