@@ -969,8 +969,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.25.4";
-const VERSION_DATE = "2026-10-25";
+const VERSION = "2026.10.26.1";
+const VERSION_DATE = "2026-10-26";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
 const MV_EVENTS = [
@@ -2904,6 +2904,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.10.26.1",date:"2026-10-26",notes:["Works without internet: the first time you open this app with internet it saves a copy on the iPad, so it still opens and grades with no Wi-Fi (sim building outage, in flight). With internet it always loads the newest version first, exactly as before; if the connection is slow it opens the saved copy and offers ‘Update now’ when the newer version finishes downloading. An ‘Offline’ tag shows at the bottom-left when there is no internet. Briefing slides still need internet."]},
  {v:"2026.10.25.4",date:"2026-10-25",notes:["Crew rows: shorter Duty box; the Swap button now sits in its own column beside the two pilot rows, and a row wraps to a second line on a narrower iPad screen instead of running under the Swap button."]},
  {v:"2026.10.25.3",date:"2026-10-25",notes:["Crew rows tidied: “Special Tracking” is now labeled ST (the AIMS abbreviation) with an ⓘ button that explains it — Briefed has one too. Frees room on the iPad crew line."]},
  {v:"2026.10.25.2",date:"2026-10-25",notes:["Fix: changing a pilot's T/O, Ldg or Special Tracking box could overwrite that pilot's Duty behind the scenes (the screen still showed CA/FO), which could throw off the seat and N/A rules for that crew. The Duty box is now the only thing that sets Duty. If a crew was graded after changing T/O, Ldg or Special Tracking, re-check its Duty boxes and N/A cells.","AIMS: Briefing completed is now recorded for the MV module — a Briefing completed (Yes/No) box beside each pilot on the MV sheet, shown in the AIMS Module Status line and on the PDF AIMS page (and in the Data Test Group submitted record, with the time it was marked).", "After presenting the CQMV.1 briefing through the Event Plan, the app offers to record Briefing completed for both crewmembers.", "SPOT AIMS entry order confirmed: 2.5.1 RTO is now on the AIMS form, last — no order change."]},
