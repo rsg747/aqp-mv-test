@@ -969,8 +969,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.26.1";
-const VERSION_DATE = "2026-10-26";
+const VERSION = "2026.10.30.1";
+const VERSION_DATE = "2026-10-30";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
 const MV_EVENTS = [
@@ -1228,7 +1228,7 @@ const SPOT_LG = {
          "Grade sheet — CA/FO Pairing: Task is performed once (first half only). The FO initiates the takeoff as PF, then the CA becomes PF once the decision to reject has been made. CA/CA Pairing: Task will be performed twice (once in the first half and once in the second half) each CA must perform the maneuver once, where they initiate the takeoff as PM then become PF for the RTO. In a CA/CA pairing, each CA will receive PM ratings when occupying the right seat. FO/FO Pairing: Task will be performed twice (once in the first half and once in the second half) each FO must perform the maneuver once, where they initiate the takeoff as PF then become PM for the RTO. Mark N/A for FO PF ratings.",
          "» After First Crewmember: Return to SPOT Circuit 1 to alternate roles. Advise Crew.",
          "» After Second Crewmember: SPOT Complete. Proceed to Debriefing. Advise Crew.",
-         "Once all objectives are Complete/Satisfactory, review the pilot's CQMT1.1 AIMS form and use the CQ Maintain Recency lesson guide to conduct any additional takeoffs and manual landings needed to ensure the pilot departs the Training Center with 3 takeoffs and 3 landings, in accordance with AQPM 5.4."]},
+         "Once all objectives are Complete/Satisfactory, review the pilot's CQMT1.1 AIMS form and use the CQ Maintain Recency lesson guide to conduct any additional takeoffs and manual landings needed to ensure the pilot departs the Training Center with 3 takeoffs and 3 landings, in accordance with AQPM 5.2."]},
 };
 /* which chart(s) are relevant to each profile node, per exercise (by index) */
 const NODE_CHARTS = {
@@ -2904,6 +2904,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.10.30.1",date:"2026-10-30",notes:["References updated to AQPM Version 5 (03 AUG 26): the recency notes now cite AQPM 5.2 (the recency section moved from 5.4 to 5.2; content unchanged)."]},
  {v:"2026.10.26.1",date:"2026-10-26",notes:["Works without internet: the first time you open this app with internet it saves a copy on the iPad, so it still opens and grades with no Wi-Fi (sim building outage, in flight). With internet it always loads the newest version first, exactly as before; if the connection is slow it opens the saved copy and offers ‘Update now’ when the newer version finishes downloading. An ‘Offline’ tag shows at the bottom-left when there is no internet. Briefing slides still need internet."]},
  {v:"2026.10.25.4",date:"2026-10-25",notes:["Crew rows: shorter Duty box; the Swap button now sits in its own column beside the two pilot rows, and a row wraps to a second line on a narrower iPad screen instead of running under the Swap button."]},
  {v:"2026.10.25.3",date:"2026-10-25",notes:["Crew rows tidied: “Special Tracking” is now labeled ST (the AIMS abbreviation) with an ⓘ button that explains it — Briefed has one too. Frees room on the iPad crew line."]},
