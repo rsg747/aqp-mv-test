@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon-precomposed" href="icon.png">
 <link rel="icon" type="image/png" href="icon.png">
 <style>html,body{margin:0;padding:0;height:100%;background:#0b1428;overflow:hidden}
-#app{border:0;position:fixed;left:0;right:0;bottom:0;top:env(safe-area-inset-top,0px);width:100%;height:calc(100% - env(safe-area-inset-top,0px))}html.aqp-pwa #app{top:calc(max(env(safe-area-inset-top,0px),24px) + 30px);height:calc(100% - calc(max(env(safe-area-inset-top,0px),24px) + 30px))}html.aqp-pwa body::before{content:"";position:fixed;left:0;right:0;top:0;height:calc(max(env(safe-area-inset-top,0px),24px) + 30px);background:#eef1f5;border-bottom:1px solid rgba(20,40,70,.10);z-index:2147483000;pointer-events:none}
+#app{border:0;position:fixed;left:0;right:0;bottom:0;top:env(safe-area-inset-top,0px);width:100%;height:calc(100% - env(safe-area-inset-top,0px))}html.aqp-pwa #app{top:0;height:100%}
 #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#9fb2d0;font:16px -apple-system,Arial,sans-serif;text-align:center}
 #load b{color:#F2C14E}</style><script>(function(){try{if(navigator.standalone||matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches)document.documentElement.classList.add("aqp-pwa");}catch(e){}})();</script></head>
 <body>
@@ -23,7 +23,7 @@
 // Load the freshest copy INSIDE this page (keeps the Home-Screen icon), unique URL defeats caching.
 var TOOL="MV_SPOT_Run_and_Grade.html";
 var f=document.getElementById('app');
-f.onload=function(){ var l=document.getElementById('load'); if(l) l.style.display='none'; };
+f.onload=function(){ var l=document.getElementById('load'); if(l) l.style.display='none'; try{ if(document.documentElement.classList.contains('aqp-pwa')){ var p=document.createElement('div'); p.style.cssText='position:fixed;left:0;top:0;width:1px;height:calc(max(env(safe-area-inset-top,0px),24px) + 30px);visibility:hidden;pointer-events:none'; document.body.appendChild(p); var h=Math.round(p.getBoundingClientRect().height)||54; p.remove(); var d=f.contentDocument; if(d && d.head && !d.getElementById('aqp-sb')){ var st=d.createElement('style'); st.id='aqp-sb'; st.textContent='body{padding-top:'+(h+6)+'px !important}body::before{content:"";position:fixed;left:0;right:0;top:0;height:'+h+'px;background:rgba(238,241,245,.55);-webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3);border-bottom:1px solid rgba(20,40,70,.10);z-index:2147483000;pointer-events:none}'; d.head.appendChild(st); } } }catch(e){} };
 f.src = TOOL + (TOOL.indexOf("?")<0?"?":"&") + "v=" + Date.now();
 </script><style id="aqp-off-css">
 #aqpOffPill{position:fixed;left:10px;bottom:10px;z-index:2147483000;background:#7a4b00;color:#fff;font:600 12px -apple-system,Segoe UI,Arial,sans-serif;padding:6px 11px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:none;opacity:.92;display:none}
