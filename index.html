@@ -3,13 +3,14 @@
 <title>MV + SPOT · Run-and-Grade</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#0b1428">
 <meta name="apple-mobile-web-app-title" content="MV CQMV.1">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="apple-touch-icon-precomposed" href="icon.png">
 <link rel="icon" type="image/png" href="icon.png">
 <style>html,body{margin:0;padding:0;height:100%;background:#0b1428;overflow:hidden}
-#app{border:0;position:fixed;inset:0;width:100%;height:100%}
+#app{border:0;position:fixed;left:0;right:0;bottom:0;top:env(safe-area-inset-top,0px);width:100%;height:calc(100% - env(safe-area-inset-top,0px))}
 #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#9fb2d0;font:16px -apple-system,Arial,sans-serif;text-align:center}
 #load b{color:#F2C14E}</style></head>
 <body>
