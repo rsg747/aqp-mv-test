@@ -969,8 +969,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.10.30.1";
-const VERSION_DATE = "2026-10-30";
+const VERSION = "2026.11.03.1";
+const VERSION_DATE = "2026-11-03";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
 const MV_EVENTS = [
@@ -1487,7 +1487,7 @@ const ATTEMPT_OPTS = ["Initial Attempt","Remedial Attempt 1","Remedial Attempt 2
 const take = {pf1st:"Initial Attempt", pf2nd:"Initial Attempt"};
 /* AIMS 'Module Attempt Status'. Older saved sessions stored a Take number: 1 -> Initial Attempt, n -> Repeat Attempt n-1. */
 function normAttempt(v){ v=String(v==null?"":v); if(ATTEMPT_OPTS.indexOf(v)>=0) return v; const n=parseInt(v,10); if(!n||n<=1) return "Initial Attempt"; return "Repeat Attempt "+Math.min(n-1,4); }
-function attemptOptsHTML(sel){ sel=normAttempt(sel); return ATTEMPT_OPTS.map(o=>`<option${o===sel?" selected":""}>${o}</option>`).join(""); }
+function attemptOptsHTML(sel){ sel=normAttempt(sel); return ATTEMPT_OPTS.map(o=>`<option value="${o}"${o===sel?" selected":""}>${o.replace(" Attempt","")}</option>`).join(""); }
 function nextAttemptNo(v){ v=normAttempt(v); if(v==="Initial Attempt") return 1; return Math.min((parseInt(v.replace(/\D/g,""),10)||0)+1,4); }
 /* ---- crew roster lookup — LOCAL import only, never published, never leaves the device ---- */
 let ROSTER = {};
@@ -2904,6 +2904,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.11.03.1",date:"2026-11-03",notes:["Crew rows fit on one line on the iPad again: tighter spacing and smaller boxes, and the Attempt box shows a short label (Initial, Remedial 1, Repeat 1 …) — AIMS, the PDF and the record still use the full Module Attempt Status."]},
  {v:"2026.10.30.1",date:"2026-10-30",notes:["References updated to AQPM Version 5 (03 AUG 26): the recency notes now cite AQPM 5.2 (the recency section moved from 5.4 to 5.2; content unchanged)."]},
  {v:"2026.10.26.1",date:"2026-10-26",notes:["Works without internet: the first time you open this app with internet it saves a copy on the iPad, so it still opens and grades with no Wi-Fi (sim building outage, in flight). With internet it always loads the newest version first, exactly as before; if the connection is slow it opens the saved copy and offers ‘Update now’ when the newer version finishes downloading. An ‘Offline’ tag shows at the bottom-left when there is no internet. Briefing slides still need internet."]},
  {v:"2026.10.25.4",date:"2026-10-25",notes:["Crew rows: shorter Duty box; the Swap button now sits in its own column beside the two pilot rows, and a row wraps to a second line on a narrower iPad screen instead of running under the Swap button."]},
@@ -3751,5 +3752,20 @@ document.addEventListener("click",function(e){
 }, true);
 </script>
 <style>/* crew rows: Swap sits in its own column and the rows wrap instead of running under it */.crewwrap{display:grid !important;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:center;padding-right:0 !important}.crewwrap>.meta{grid-column:1;flex-wrap:wrap !important;overflow:visible !important;row-gap:6px;margin:4px 0 !important}.crewwrap>.swapbtn{position:static !important;grid-column:2;grid-row:1 / span 2;align-self:center;white-space:nowrap}.crewwrap .meta select.dutysel[data-person]:not([data-cs]){width:78px !important;min-width:0 !important}.crewwrap .meta select.dutysel[data-take]{width:132px !important;min-width:0 !important}.crewwrap .meta input[data-field="name"]{width:115px !important}.crewwrap .meta input[data-field="emp"]{width:70px !important}</style>
+<style id="crewcompact">
+body .crewwrap{column-gap:6px !important}
+body .crewwrap .meta{column-gap:5px !important;gap:6px 5px !important}
+body .crewwrap .meta label{gap:2px !important;font-size:11.5px !important;letter-spacing:-.1px}
+body .crewwrap .meta input[data-field="name"]{width:98px !important}
+body .crewwrap .meta input[data-field="emp"]{width:50px !important}
+body .crewwrap .meta select.dutysel{padding:4px 1px !important;font-size:11.5px !important}
+body .crewwrap .meta select.dutysel[data-person]:not([data-cs]){width:56px !important;min-width:0 !important}
+body .crewwrap .meta select.dutysel[data-take]{width:88px !important;min-width:0 !important}
+body .crewwrap .meta select.dutysel[data-cs="to"],body .crewwrap .meta select.dutysel[data-cs="ldg"]{width:38px !important;min-width:0 !important}
+body .crewwrap .meta select.dutysel[data-cs="spec"],body .crewwrap .meta select.dutysel[data-cs="brief"]{width:48px !important;min-width:0 !important}
+body .crewwrap .meta select.dutysel.kvsel{width:56px !important;min-width:0 !important}
+body .crewwrap .meta .stinfo{width:13px !important;height:13px !important;min-width:0 !important;line-height:11px !important;font-size:9px !important;margin:0 1px 0 0 !important;padding:0 !important}
+body .crewwrap>.swapbtn{padding:6px 8px !important}
+</style>
 </body>
 </html>
