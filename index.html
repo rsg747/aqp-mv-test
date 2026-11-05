@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon-precomposed" href="icon.png">
 <link rel="icon" type="image/png" href="icon.png">
 <style>html,body{margin:0;padding:0;height:100%;background:#0b1428;overflow:hidden}
-#app{border:0;position:fixed;left:0;right:0;bottom:0;top:env(safe-area-inset-top,0px);width:100%;height:calc(100% - env(safe-area-inset-top,0px))}html.aqp-pwa #app{top:calc(max(env(safe-area-inset-top,0px),24px) + 30px);height:calc(100% - calc(max(env(safe-area-inset-top,0px),24px) + 30px))}html.aqp-pwa body::before{content:"";position:fixed;left:0;right:0;top:0;height:calc(max(env(safe-area-inset-top,0px),24px) + 30px);background:#eef1f5;border-bottom:1px solid rgba(20,40,70,.10);z-index:2147483000;pointer-events:none}
+#app{border:0;position:fixed;left:0;right:0;bottom:0;top:env(safe-area-inset-top,0px);width:100%;height:calc(100% - env(safe-area-inset-top,0px))}html.aqp-pwa #app{top:calc((max(env(safe-area-inset-top,0px),24px) + 30px) * 0.667);height:calc(100% - calc((max(env(safe-area-inset-top,0px),24px) + 30px) * 0.667))}html.aqp-pwa body::before{content:"";position:fixed;left:0;right:0;top:0;height:calc((max(env(safe-area-inset-top,0px),24px) + 30px) * 0.667);background:#eef1f5;border-bottom:1px solid rgba(20,40,70,.10);z-index:2147483000;pointer-events:none}
 #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#9fb2d0;font:16px -apple-system,Arial,sans-serif;text-align:center}
 #load b{color:#F2C14E}</style><script>(function(){try{if(navigator.standalone||matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches)document.documentElement.classList.add("aqp-pwa");}catch(e){}})();</script></head>
 <body>
