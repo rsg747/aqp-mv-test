@@ -969,7 +969,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.11.05.2";
+const VERSION = "2026.11.05.3";
 const VERSION_DATE = "2026-11-05";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
@@ -2904,6 +2904,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.11.05.3",date:"2026-11-05",notes:["Debriefing moved to the 🗣 Debrief button: it now offers ▶ Present debriefing slides (the debriefing section of the briefing / debriefing deck, full screen) and records Debrief completed — on exit from the slides it offers to record it. The Briefing menu no longer lists the Debriefing section."]},
  {v:"2026.11.05.2",date:"2026-11-05",notes:["Observing Evaluator / FAA Inspector: 👁 button in the toolbar for the observer's name and ID (leave blank if none). It prints on the PDF."]},
  {v:"2026.11.05.1",date:"2026-11-05",notes:["Debriefing completed: a 🗣 Debrief button in the toolbar records that the debrief was done (with the time). It prints on the PDF, is saved with the session and clears with New."]},
  {v:"2026.11.03.1",date:"2026-11-03",notes:["Crew rows fit on one line on the iPad again: tighter spacing and smaller boxes, and the Attempt box shows a short label (Initial, Remedial 1, Repeat 1 …) — AIMS, the PDF and the record still use the full Module Attempt Status."]},
@@ -3660,13 +3661,13 @@ document.querySelectorAll(".xtab").forEach(t=>t.addEventListener("click",()=>{
       var g=e.target.closest("[data-go]"); if(g){ closeMenu(); present(g.dataset.go, g.dataset.at===""?null:+g.dataset.at); } });
     cfg.forEach(function(d){ if(d.soon) return;
       load(d.id).then(function(m){ var row=ov.querySelector('[data-deck="'+d.id+'"] [data-secs]'); if(!row) return;
-        row.innerHTML='<button type="button" class="go" data-go="'+h(d.id)+'" data-at="">▶ Present</button>'+(m.sections||[]).map(function(s){ return '<button type="button" data-go="'+h(d.id)+'" data-at="'+s[1]+'">'+h(s[0])+'</button>'; }).join("");
+        row.innerHTML='<button type="button" class="go" data-go="'+h(d.id)+'" data-at="">▶ Present</button>'+(m.sections||[]).filter(function(s){ return s[0]!=="Debriefing"; }).map(function(s){ return '<button type="button" data-go="'+h(d.id)+'" data-at="'+s[1]+'">'+h(s[0])+'</button>'; }).join("");
         var ds=ov.querySelector('[data-deck="'+d.id+'"] .bp-ds'); if(ds && !d.sub) ds.textContent=m.slides.length+" slides · "+(m.date?("deck dated "+m.date):"");
       }).catch(function(){ var row=ov.querySelector('[data-deck="'+d.id+'"] [data-secs]'); if(row) row.innerHTML='<span class="bp-ds" style="color:#a3271b">Slides could not load — check Wi-Fi.</span>'; });
     });
   }
   function buildList(){ var m=P.m; P.list=[]; m.slides.forEach(function(s,i){ if(s.ans) return; if(s.fac && !P.fac) return; P.list.push(i); }); }
-  function present(id, at){
+  window.BRIEF_PRESENT=function(id,at,mode){ present(id,at); P.mode=mode||""; }; function present(id, at){ P.mode="";
     var el=document.getElementById("bpPres"); if(!el){ el=document.createElement("div"); el.id="bpPres"; el.className="bp-pres"; document.body.appendChild(el); wire(el); }
     el.style.display="flex"; el.innerHTML='<div class="bp-msg">Loading slides…</div>';
     P.on=true; P.id=id; P.rev=false; P.notes=false; P.maxSeen=-1;
@@ -3698,7 +3699,7 @@ document.querySelectorAll(".xtab").forEach(t=>t.addEventListener("click",()=>{
   }
   function poke(){ var b=document.getElementById("bpBar"); if(!b) return; b.classList.remove("hide"); clearTimeout(P.hideT); P.hideT=setTimeout(function(){ var x=document.getElementById("bpBar"); if(x) x.classList.add("hide"); },3500); }
   function act(a,v){
-    if(a==="exit"){ try{ var ep=(P.m&&P.m.sections||[]).filter(function(x){return x[0]==="Event plan";})[0]; if(ep && P.maxSeen>=ep[1] && typeof window.BRIEF_DONE_HOOK==="function") setTimeout(function(){ window.BRIEF_DONE_HOOK(P.id); },150); }catch(e){} P.on=false; var el=document.getElementById("bpPres"); if(el){ el.style.display="none"; el.innerHTML=""; } try{ if(document.fullscreenElement) document.exitFullscreen(); else if(document.webkitFullscreenElement) document.webkitExitFullscreen(); }catch(e){} try{ P.lock&&P.lock.release(); }catch(e){} P.lock=null; return; }
+    if(a==="exit"){ try{ if(P.mode==="debrief"){ var db=(P.m&&P.m.sections||[]).filter(function(x){return x[0]==="Debriefing";})[0]; if(db && P.maxSeen>=db[1] && typeof window.DEBRIEF_DONE_HOOK==="function") setTimeout(function(){ window.DEBRIEF_DONE_HOOK(); },150); } }catch(e){} try{ var ep=(P.m&&P.m.sections||[]).filter(function(x){return x[0]==="Event plan";})[0]; if(ep && P.mode!=="debrief" && P.maxSeen>=ep[1] && typeof window.BRIEF_DONE_HOOK==="function") setTimeout(function(){ window.BRIEF_DONE_HOOK(P.id); },150); }catch(e){} P.on=false; var el=document.getElementById("bpPres"); if(el){ el.style.display="none"; el.innerHTML=""; } try{ if(document.fullscreenElement) document.exitFullscreen(); else if(document.webkitFullscreenElement) document.webkitExitFullscreen(); }catch(e){} try{ P.lock&&P.lock.release(); }catch(e){} P.lock=null; return; }
     if(!P.m) return;
     if(a==="next"){ if(P.list[P.pos]!=null && ansOf(P.list[P.pos])>=0 && !P.rev){ P.rev=true; } else if(P.pos<P.list.length-1){ P.pos++; P.rev=false; } }
     else if(a==="prev"){ if(P.rev){ P.rev=false; } else if(P.pos>0){ P.pos--; P.rev=false; } }
@@ -3827,14 +3828,28 @@ html.aqp-pwa .dbf-ov{top:calc((max(env(safe-area-inset-top,0px),24px) + 30px) * 
   }
   function openDbf(){
     var s=st();
+    var deck=hasDeck();
     if(!s.done){
-      modal("Debriefing completed", "Record that the <b>debrief</b> was completed for this crew? The time is saved with it; it prints on the PDF"+(window.SUBMITTED!==undefined||document.querySelector('[data-tb="dtsubmit"]')?" and goes with the submitted record":"")+".",
-        [{label:"Not yet", fn:function(ov){ ov.remove(); }}, {label:"Debrief completed", cls:"ok", fn:function(ov){ s.done=true; s.at=new Date().toISOString(); persist(); paint(); ov.remove(); note("Debrief completed recorded"); }}]);
+      var b=[{label:"Not yet", fn:function(ov){ ov.remove(); }}];
+      if(deck) b.push({label:"▶ Present debriefing slides", cls:"pri", fn:function(ov){ ov.remove(); presentDebrief(); }});
+      b.push({label:"Debrief completed", cls:"ok", fn:function(ov){ s.done=true; s.at=new Date().toISOString(); persist(); paint(); ov.remove(); note("Debrief completed recorded"); }});
+      modal("Debriefing", (deck?"<b>▶ Present debriefing slides</b> opens the debriefing section of the "+h(deck.label||"briefing / debriefing")+" deck full screen (for the Apple TV). When you exit the slides it offers to record the debrief.<br><br>":"")+"Tap <b>Debrief completed</b> to record that the debrief was done (with the time). It prints on the PDF"+(document.querySelector('[data-tb="dtsubmit"]')?" and goes with the submitted record":"")+".", b);
     } else {
       modal("Debriefing completed", "Debrief recorded as completed at <b>"+h(fmt(s.at))+"</b>.",
-        [{label:"Mark NOT completed", fn:function(ov){ s.done=false; s.at=""; persist(); paint(); ov.remove(); note("Debrief cleared"); }}, {label:"OK", cls:"pri", fn:function(ov){ ov.remove(); }}]);
+        [{label:"Mark NOT completed", fn:function(ov){ s.done=false; s.at=""; persist(); paint(); ov.remove(); note("Debrief cleared"); }}].concat(deck?[{label:"▶ Present debriefing slides", fn:function(ov){ ov.remove(); presentDebrief(); }}]:[]).concat([{label:"OK", cls:"pri", fn:function(ov){ ov.remove(); }}]));
     }
   }
+  function hasDeck(){ try{ var d=(window.BRIEF_DECKS||[])[0]; return (d && typeof window.BRIEF_PRESENT==="function") ? d : null; }catch(e){ return null; } }
+  function presentDebrief(){
+    var d=hasDeck(); if(!d) return;
+    fetch("https://rsg747.github.io/aqp-mt-test/decks/"+d.id+"/manifest.json").then(function(r){ return r.json(); }).then(function(m){
+      var sec=(m.sections||[]).filter(function(x){ return x[0]==="Debriefing"; })[0];
+      window.BRIEF_PRESENT(d.id, sec?sec[1]:null, "debrief");
+    }).catch(function(){ note("Couldn't load the slides — check Wi-Fi."); });
+  }
+  window.DEBRIEF_DONE_HOOK=function(){ var s=st(); if(s.done) return;
+    modal("Debrief completed?", "The debriefing slides were presented.<br><br>Record <b>Debrief completed</b> now? It prints on the PDF"+(document.querySelector('[data-tb="dtsubmit"]')?" and goes with the submitted record":"")+".",
+      [{label:"Not yet", fn:function(ov){ ov.remove(); }}, {label:"Debrief completed", cls:"ok", fn:function(ov){ s.done=true; s.at=new Date().toISOString(); persist(); paint(); ov.remove(); note("Debrief completed recorded"); }}]); };
   function openObs(){
     var s=st();
     var ov=modal("Observing Evaluator / FAA Inspector", 'Only if someone observed this event (grade sheet line “Observing Evaluator/FAA Inspector”). Leave blank if none.<label>Name</label><input data-on value="'+h(s.obsName||"")+'" placeholder="e.g. Smith, J. (FAA)"><label>ID #</label><input data-oi value="'+h(s.obsId||"")+'" placeholder="Employee or FAA ID">',
