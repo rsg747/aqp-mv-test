@@ -969,8 +969,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.11.03.1";
-const VERSION_DATE = "2026-11-03";
+const VERSION = "2026.11.05.1";
+const VERSION_DATE = "2026-11-05";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
 const MV_EVENTS = [
@@ -2904,6 +2904,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.11.05.1",date:"2026-11-05",notes:["Debriefing completed: a 🗣 Debrief button in the toolbar records that the debrief was done (with the time). It prints on the PDF, is saved with the session and clears with New."]},
  {v:"2026.11.03.1",date:"2026-11-03",notes:["Crew rows fit on one line on the iPad again: tighter spacing and smaller boxes, and the Attempt box shows a short label (Initial, Remedial 1, Repeat 1 …) — AIMS, the PDF and the record still use the full Module Attempt Status."]},
  {v:"2026.10.30.1",date:"2026-10-30",notes:["References updated to AQPM Version 5 (03 AUG 26): the recency notes now cite AQPM 5.2 (the recency section moved from 5.4 to 5.2; content unchanged)."]},
  {v:"2026.10.26.1",date:"2026-10-26",notes:["Works without internet: the first time you open this app with internet it saves a copy on the iPad, so it still opens and grades with no Wi-Fi (sim building outage, in flight). With internet it always loads the newest version first, exactly as before; if the connection is slow it opens the saved copy and offers ‘Update now’ when the newer version finishes downloading. An ‘Offline’ tag shows at the bottom-left when there is no internet. Briefing slides still need internet."]},
@@ -3767,5 +3768,101 @@ body .crewwrap .meta select.dutysel.kvsel{width:56px !important;min-width:0 !imp
 body .crewwrap .meta .stinfo{width:13px !important;height:13px !important;min-width:0 !important;line-height:11px !important;font-size:9px !important;margin:0 1px 0 0 !important;padding:0 !important}
 body .crewwrap>.swapbtn{padding:6px 8px !important}
 </style>
+<style id="dbf-css">
+.dbf-btn{border:1px solid #c9d2de;border-radius:9px;padding:8px 12px;font:800 14px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#fff;color:#33404f;cursor:pointer}
+.dbf-btn.done{background:#e6f6ec;border-color:#9dd3b0;color:#14713c}
+.dbf-btn.obs.set{background:#eef3fb;border-color:#9fb6d8;color:#1b3a66}
+.dbf-ov{position:fixed;inset:0;background:rgba(10,20,40,.5);z-index:3100;display:flex;align-items:center;justify-content:center;padding:16px}
+html.aqp-pwa .dbf-ov{top:calc((max(env(safe-area-inset-top,0px),24px) + 30px) * 0.667) !important}
+.dbf-box{background:#fff;border-radius:14px;max-width:460px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.35);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#1b2430;overflow:hidden}
+.dbf-h{background:#1b2a44;color:#fff;font-weight:800;font-size:16px;padding:12px 16px}
+.dbf-b{padding:14px 16px;font-size:14px;line-height:1.45}
+.dbf-b label{display:block;font-weight:700;margin:8px 0 3px}
+.dbf-b input{width:100%;box-sizing:border-box;border:1px solid #c9d2de;border-radius:8px;padding:9px;font:15px -apple-system,Arial,sans-serif}
+.dbf-f{display:flex;gap:8px;justify-content:flex-end;padding:10px 16px 14px;flex-wrap:wrap}
+.dbf-f button{border:0;border-radius:9px;padding:10px 14px;font:700 14px -apple-system,Arial,sans-serif;cursor:pointer;background:#e8edf3;color:#1b2430}
+.dbf-f button.pri{background:#1b2a44;color:#fff}
+.dbf-f button.ok{background:#14713c;color:#fff}
+</style>
+<script>
+/* ===== Debriefing completed (all apps) + Observing Evaluator / FAA Inspector (LOE grade sheet) =====
+   Debrief: one Yes/No for the session with the time it was marked. It prints on the PDF and goes with the
+   Data Test Group record (debriefCompleted / debriefCompletedAt). Saved with the session, cleared by New. */
+(function(){
+  var isCQ=false; try{ isCQ = (typeof S!=="undefined" && S && typeof S==="object" && S.app==="CQLC"); }catch(e){}
+  var OBS = !!window.DBF_OBSERVER;
+  var mem={done:false, at:"", obsName:"", obsId:""};
+  function st(){ if(isCQ){ try{ if(!S.debrief) S.debrief={done:false,at:"",obsName:"",obsId:""}; return S.debrief; }catch(e){} } return mem; }
+  function side(){ try{ return (typeof AUTOSAVE_KEY!=="undefined"?AUTOSAVE_KEY:"AQP")+"_DBF"; }catch(e){ return "AQP_DBF"; } }
+  function persist(){ try{ if(isCQ){ if(typeof save==="function") save(); } else { try{ localStorage.setItem(side(), JSON.stringify(mem)); }catch(e){} if(typeof autosave==="function") autosave(); } }catch(e){} }
+  function fmt(iso){ try{ var d=new Date(iso); return d.toLocaleDateString()+" "+d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}); }catch(e){ return iso||""; } }
+  function h(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function note(t){ try{ if(typeof toast==="function") toast(t); }catch(e){} }
+  window.DBF_STATE=function(){ var s=st(); return {done:!!s.done, at:s.at||"", obsName:s.obsName||"", obsId:s.obsId||""}; };
+
+  /* toolbar buttons */
+  function bar(){ return document.querySelector(".toolbar") || document.querySelector(".tools"); }
+  function paint(){
+    var t=bar(); if(!t) return; var s=st();
+    var b=t.querySelector("[data-dbf]");
+    if(!b){ b=document.createElement("button"); b.type="button"; b.className="dbf-btn"+(t.classList.contains("tools")?" btn":" tbtn2"); b.setAttribute("data-dbf","1");
+      var anchor=t.querySelector('[data-tb="pdf"]'); if(anchor) t.insertBefore(b, anchor); else t.appendChild(b);
+      b.addEventListener("click", function(e){ e.preventDefault(); e.stopPropagation(); openDbf(); }, true); }
+    b.classList.toggle("done", !!s.done);
+    b.textContent = s.done ? "✓ Debriefed "+(s.at?new Date(s.at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}):"") : "🗣 Debrief: not done";
+    if(OBS){ var o=t.querySelector("[data-dbfobs]");
+      if(!o){ o=document.createElement("button"); o.type="button"; o.className="dbf-btn obs"+(t.classList.contains("tools")?" btn":" tbtn2"); o.setAttribute("data-dbfobs","1");
+        b.insertAdjacentElement("afterend", o); o.addEventListener("click", function(e){ e.preventDefault(); e.stopPropagation(); openObs(); }, true); }
+      o.classList.toggle("set", !!(s.obsName||"").trim());
+      o.textContent = (s.obsName||"").trim() ? "👁 Observer: "+s.obsName : "👁 Observer / FAA"; }
+  }
+  window.DBF_PAINT=paint;
+  function modal(title, inner, btns){
+    var ov=document.createElement("div"); ov.className="dbf-ov";
+    ov.innerHTML='<div class="dbf-box"><div class="dbf-h">'+h(title)+'</div><div class="dbf-b">'+inner+'</div><div class="dbf-f"></div></div>';
+    var f=ov.querySelector(".dbf-f"); btns.forEach(function(x){ var b=document.createElement("button"); b.type="button"; b.textContent=x.label; if(x.cls) b.className=x.cls; b.onclick=function(){ x.fn(ov); }; f.appendChild(b); });
+    ov.addEventListener("click", function(e){ if(e.target===ov) ov.remove(); }); document.body.appendChild(ov); return ov;
+  }
+  function openDbf(){
+    var s=st();
+    if(!s.done){
+      modal("Debriefing completed", "Record that the <b>debrief</b> was completed for this crew? The time is saved with it; it prints on the PDF"+(window.SUBMITTED!==undefined||document.querySelector('[data-tb="dtsubmit"]')?" and goes with the submitted record":"")+".",
+        [{label:"Not yet", fn:function(ov){ ov.remove(); }}, {label:"Debrief completed", cls:"ok", fn:function(ov){ s.done=true; s.at=new Date().toISOString(); persist(); paint(); ov.remove(); note("Debrief completed recorded"); }}]);
+    } else {
+      modal("Debriefing completed", "Debrief recorded as completed at <b>"+h(fmt(s.at))+"</b>.",
+        [{label:"Mark NOT completed", fn:function(ov){ s.done=false; s.at=""; persist(); paint(); ov.remove(); note("Debrief cleared"); }}, {label:"OK", cls:"pri", fn:function(ov){ ov.remove(); }}]);
+    }
+  }
+  function openObs(){
+    var s=st();
+    var ov=modal("Observing Evaluator / FAA Inspector", 'Only if someone observed this event (grade sheet line “Observing Evaluator/FAA Inspector”). Leave blank if none.<label>Name</label><input data-on value="'+h(s.obsName||"")+'" placeholder="e.g. Smith, J. (FAA)"><label>ID #</label><input data-oi value="'+h(s.obsId||"")+'" placeholder="Employee or FAA ID">',
+      [{label:"Clear", fn:function(ov){ s.obsName=""; s.obsId=""; persist(); paint(); ov.remove(); }}, {label:"Save", cls:"pri", fn:function(ov){ s.obsName=ov.querySelector("[data-on]").value.trim(); s.obsId=ov.querySelector("[data-oi]").value.trim(); persist(); paint(); ov.remove(); }}]);
+    setTimeout(function(){ try{ ov.querySelector("[data-on]").focus(); }catch(e){} }, 50);
+  }
+
+  /* session save / restore / new (MV, MT, MT2, LOE) */
+  if(!isCQ){
+    if(typeof snapshot==="function"){ var _snap=snapshot; snapshot=function(){ var o=_snap.apply(this, arguments); try{ o.debrief={done:mem.done, at:mem.at, obsName:mem.obsName, obsId:mem.obsId}; }catch(e){} return o; }; }
+    if(typeof applySnapshot==="function"){ var _apply=applySnapshot; applySnapshot=function(s){ var r=_apply.apply(this, arguments); try{ var d=(s&&s.debrief)||{}; mem.done=!!d.done; mem.at=d.at||""; mem.obsName=d.obsName||""; mem.obsId=d.obsId||""; try{ localStorage.setItem(side(), JSON.stringify(mem)); }catch(e){} setTimeout(paint,0); }catch(e){} return r; }; }
+    if(typeof doNew==="function"){ var _new=doNew; doNew=function(){ mem.done=false; mem.at=""; mem.obsName=""; mem.obsId=""; try{ localStorage.removeItem(side()); }catch(e){} var r=_new.apply(this, arguments); setTimeout(paint,0); return r; }; }
+  }
+  /* PDF: one line at the foot of page 1 */
+  if(typeof makePdf==="function"){ var _pdf=makePdf; makePdf=function(){ var doc=_pdf.apply(this, arguments);
+    try{ var s=st(); var cur=doc.internal.getCurrentPageInfo().pageNumber; doc.setPage(1);
+      var PH=doc.internal.pageSize.getHeight(); doc.setFontSize(7.5); doc.setTextColor(60,60,60);
+      var t="Debriefing: "+(s.done?"Completed "+fmt(s.at):"Not recorded as completed");
+      if(OBS) t+="     Observing Evaluator/FAA Inspector: "+((s.obsName||"").trim()?s.obsName+(s.obsId?" (ID "+s.obsId+")":""):"None");
+      doc.text(t, 36, PH-14); doc.setTextColor(0,0,0); doc.setPage(cur); }catch(e){}
+    return doc; }; }
+  /* paint after every render */
+  if(typeof render==="function" && !isCQ){ var _render=render; render=function(){ var r=_render.apply(this, arguments); try{ paint(); }catch(e){} return r; }; }
+  document.addEventListener("click", function(){ setTimeout(paint, 0); }, false);
+  if(isCQ){ try{ var _blank=blank; blank=function(){ var o=_blank.apply(this, arguments); o.debrief={done:false,at:"",obsName:"",obsId:""}; return o; }; }catch(e){} }
+  /* the app restored its autosave before this ran — pick up the debrief from it */
+  try{ if(!isCQ && typeof AUTOSAVE_KEY!=="undefined"){ var a=JSON.parse(localStorage.getItem(AUTOSAVE_KEY)||"null"); var d=(a&&a.debrief)||JSON.parse(localStorage.getItem(side())||"null"); if(d){ mem.done=!!d.done; mem.at=d.at||""; mem.obsName=d.obsName||""; mem.obsId=d.obsId||""; } } }catch(e){}
+  setTimeout(paint, 0); window.addEventListener("load", function(){ setTimeout(paint, 300); });
+})();
+</script>
+
 </body>
 </html>
