@@ -969,7 +969,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.11.05.1";
+const VERSION = "2026.11.05.2";
 const VERSION_DATE = "2026-11-05";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
@@ -2904,6 +2904,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.11.05.2",date:"2026-11-05",notes:["Observing Evaluator / FAA Inspector: 👁 button in the toolbar for the observer's name and ID (leave blank if none). It prints on the PDF."]},
  {v:"2026.11.05.1",date:"2026-11-05",notes:["Debriefing completed: a 🗣 Debrief button in the toolbar records that the debrief was done (with the time). It prints on the PDF, is saved with the session and clears with New."]},
  {v:"2026.11.03.1",date:"2026-11-03",notes:["Crew rows fit on one line on the iPad again: tighter spacing and smaller boxes, and the Attempt box shows a short label (Initial, Remedial 1, Repeat 1 …) — AIMS, the PDF and the record still use the full Module Attempt Status."]},
  {v:"2026.10.30.1",date:"2026-10-30",notes:["References updated to AQPM Version 5 (03 AUG 26): the recency notes now cite AQPM 5.2 (the recency section moved from 5.4 to 5.2; content unchanged)."]},
@@ -3768,6 +3769,7 @@ body .crewwrap .meta select.dutysel.kvsel{width:56px !important;min-width:0 !imp
 body .crewwrap .meta .stinfo{width:13px !important;height:13px !important;min-width:0 !important;line-height:11px !important;font-size:9px !important;margin:0 1px 0 0 !important;padding:0 !important}
 body .crewwrap>.swapbtn{padding:6px 8px !important}
 </style>
+<script>window.DBF_OBSERVER=true;</script>
 <style id="dbf-css">
 .dbf-btn{border:1px solid #c9d2de;border-radius:9px;padding:8px 12px;font:800 14px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#fff;color:#33404f;cursor:pointer}
 .dbf-btn.done{background:#e6f6ec;border-color:#9dd3b0;color:#14713c}
