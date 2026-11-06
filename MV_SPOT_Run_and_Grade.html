@@ -969,8 +969,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 const GRADES = ["5","4","3","2","2-RP","2-RF","1","1-RP","1-RF","N/A"];
 const BELOW = new Set(["3","2","2-RP","2-RF","1","1-RP","1-RF"]);
 /* ---- document version (bump on each update) ---- */
-const VERSION = "2026.11.05.3";
-const VERSION_DATE = "2026-11-05";
+const VERSION = "2026.11.06.1";
+const VERSION_DATE = "2026-11-06";
 /* ---- data models ---- */
 // rows present per exercise, in AIMS/PF then PM order
 const MV_EVENTS = [
@@ -2904,6 +2904,7 @@ function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.
 /* generic modal */
 function closeModal(){ document.querySelectorAll(".mo-overlay").forEach(o=>o.remove()); }
 const CHANGELOG=[
+ {v:"2026.11.06.1",date:"2026-11-06",notes:["Briefing deck: the question slides (CAT III Approach Preparation — LAND 3 / LAND 2; Autoland — IDLE) now show the question first; tap Reveal answer to show the answer, like the MT2 KV decks."]},
  {v:"2026.11.05.3",date:"2026-11-05",notes:["Debriefing moved to the 🗣 Debrief button: it now offers ▶ Present debriefing slides (the debriefing section of the briefing / debriefing deck, full screen) and records Debrief completed — on exit from the slides it offers to record it. The Briefing menu no longer lists the Debriefing section."]},
  {v:"2026.11.05.2",date:"2026-11-05",notes:["Observing Evaluator / FAA Inspector: 👁 button in the toolbar for the observer's name and ID (leave blank if none). It prints on the PDF."]},
  {v:"2026.11.05.1",date:"2026-11-05",notes:["Debriefing completed: a 🗣 Debrief button in the toolbar records that the debrief was done (with the time). It prints on the PDF, is saved with the session and clears with New."]},
@@ -3688,7 +3689,7 @@ document.querySelectorAll(".xtab").forEach(t=>t.addEventListener("click",()=>{
       (s.fac?'<div class="bp-tag">Instructor slide</div>':'')+
       (P.notes&&P.m.slides[show].n?'<div class="bp-notes"><b>INSTRUCTOR NOTES — also showing on the TV</b>'+h(P.m.slides[show].n)+'</div>':'')+
       '<div class="bp-bar" id="bpBar"><button type="button" data-bp="prev" '+(P.pos===0?"disabled":"")+'>‹</button><span class="ct">'+(P.pos+1)+' / '+P.list.length+'</span>'+
-      (a>=0?'<button type="button" class="'+(P.rev?"":"rev")+'" data-bp="rev">'+(P.rev?"Hide finding":"Reveal finding")+'</button>':'')+
+      (a>=0?'<button type="button" class="'+(P.rev?"":"rev")+'" data-bp="rev">'+(P.rev?("Hide"+(P.m.rev?"":" finding")):(P.m.rev||"Reveal finding"))+'</button>':'')+
       '<button type="button" data-bp="next" '+(P.pos>=P.list.length-1?"disabled":"")+'>›</button>'+
       (secs.length?'<select data-bp="sec" aria-label="Jump to section"><option value="">Jump to…</option>'+secs.map(function(x){ return '<option value="'+x[1]+'">'+h(x[0])+'</option>'; }).join("")+'</select>':'')+
       '<button type="button" class="'+(P.notes?"on":"")+'" data-bp="notes" title="Instructor notes — anything on the iPad also shows on the TV">Notes</button>'+
